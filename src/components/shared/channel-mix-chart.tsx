@@ -65,6 +65,7 @@ export function ChannelMixChart({ data, title = 'Channel Mix' }: ChannelMixChart
             tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
             axisLine={false}
             tickLine={false}
+            interval={0}
           />
           <YAxis
             tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }}

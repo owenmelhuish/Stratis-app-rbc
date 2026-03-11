@@ -18,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import { Settings2, TrendingUp, TrendingDown, AlertTriangle, Zap, Target, DollarSign, BarChart3, Activity, Eye } from 'lucide-react';
 import { KPI_CONFIGS, CHANNEL_LABELS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
-import Link from 'next/link';
 
 const HERO_KPIS: KPIKey[] = ['spend', 'cpm', 'roas'];
 const HERO_COLORS: Record<string, string> = { spend: '#e07060', cpm: '#6b8aad', roas: '#50b89a' };
@@ -151,9 +150,9 @@ export function BrandView() {
               const topCampaign = [...data.campaignData]
                 .filter(c => c.campaign.status === 'live' && c.kpis.spend > 0)
                 .sort((a, b) => b.kpis.roas - a.kpis.roas)[0];
-              const topRegion = [...data.regionData]
-                .filter(r => r.kpis.spend > 0)
-                .sort((a, b) => b.kpis.roas - a.kpis.roas)[0];
+              const topProvince = [...data.stateData]
+                .filter(s => s.spend > 0)
+                .sort((a, b) => b.roas - a.roas)[0];
               const channelEntries = Object.entries(data.channelData)
                 .filter(([, kpis]) => kpis.spend > 0)
                 .sort(([, a], [, b]) => b.roas - a.roas);
@@ -187,18 +186,18 @@ export function BrandView() {
                       <span className="text-sm font-bold text-emerald-400 tabular-nums shrink-0">{formatKPIValue(topChannel[1].roas, 'decimal')}</span>
                     </div>
                   )}
-                  {topRegion && (
+                  {topProvince && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
                         <TrendingUp className="h-4 w-4 text-emerald-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Strongest Region</p>
-                        <p className="text-sm font-medium">{topRegion.regionLabel}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Strongest Province</p>
+                        <p className="text-sm font-medium">{topProvince.stateName}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-sm font-bold text-emerald-400 tabular-nums">{formatKPIValue(topRegion.kpis.roas, 'decimal')}</span>
-                        <p className="text-[10px] text-muted-foreground">{formatCurrency(topRegion.kpis.spend)} spend</p>
+                        <span className="text-sm font-bold text-emerald-400 tabular-nums">{formatKPIValue(topProvince.roas, 'decimal')}</span>
+                        <p className="text-[10px] text-muted-foreground">{formatCurrency(topProvince.spend)} spend</p>
                       </div>
                     </div>
                   )}
@@ -237,9 +236,12 @@ export function BrandView() {
                 .sort((a, b) => b.kpis.cpa - a.kpis.cpa)[0];
               const liveCampaigns = data.campaignData.filter(c => c.campaign.status === 'live');
               const offPace = liveCampaigns.filter(c => c.kpis.budgetPacing < 85 || c.kpis.budgetPacing > 115);
-              const weakestRegion = [...data.regionData]
-                .filter(r => r.kpis.spend > 0)
-                .sort((a, b) => a.kpis.roas - b.kpis.roas)[0];
+              const weakestChannel = (Object.entries(data.channelData) as [ChannelId, AggregatedKPIs][])
+                .filter(([, v]) => v.spend > 0)
+                .sort((a, b) => a[1].roas - b[1].roas)[0];
+              const highestFatigue = [...data.campaignData]
+                .filter(c => c.campaign.status === 'live' && c.kpis.creativeFatigueIndex > 0)
+                .sort((a, b) => b.kpis.creativeFatigueIndex - a.kpis.creativeFatigueIndex)[0];
 
               return (
                 <>
@@ -267,40 +269,40 @@ export function BrandView() {
                       <span className="text-sm font-bold text-amber-400 tabular-nums shrink-0">{formatCurrency(highestCPA.kpis.cpa)}</span>
                     </div>
                   )}
-                  {weakestRegion && (
+                  {weakestChannel && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/10 shrink-0">
                         <Activity className="h-4 w-4 text-amber-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Weakest Region</p>
-                        <p className="text-sm font-medium">{weakestRegion.regionLabel}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Weakest Channel</p>
+                        <p className="text-sm font-medium">{CHANNEL_LABELS[weakestChannel[0]]}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-sm font-bold text-amber-400 tabular-nums">{formatKPIValue(weakestRegion.kpis.roas, 'decimal')}</span>
-                        <p className="text-[10px] text-muted-foreground">{formatCurrency(weakestRegion.kpis.cpa)} CPA</p>
+                        <span className="text-sm font-bold text-amber-400 tabular-nums">{formatKPIValue(weakestChannel[1].roas, 'decimal')}</span>
+                        <p className="text-[10px] text-muted-foreground">{formatCurrency(weakestChannel[1].cpa)} CPA</p>
                       </div>
                     </div>
                   )}
-                  {offPace.length > 0 ? (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 shrink-0">
-                        <AlertTriangle className="h-4 w-4 text-red-400" />
+                  {highestFatigue ? (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/10 shrink-0">
+                        <AlertTriangle className="h-4 w-4 text-amber-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Off-Pace Campaigns</p>
-                        <p className="text-sm font-medium">{offPace.length} campaigns over/under pacing</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Creative Fatigue</p>
+                        <p className="text-sm font-medium truncate">{highestFatigue.campaign.name}</p>
                       </div>
-                      <Link href="/insights" className="text-xs text-red-400 hover:underline shrink-0">View &rarr;</Link>
+                      <span className="text-sm font-bold text-amber-400 tabular-nums shrink-0">{highestFatigue.kpis.creativeFatigueIndex.toFixed(0)}%</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
-                        <DollarSign className="h-4 w-4 text-emerald-400" />
+                        <Activity className="h-4 w-4 text-emerald-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Budget Pacing</p>
-                        <p className="text-sm font-medium text-emerald-400">All campaigns on pace</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Creative Fatigue</p>
+                        <p className="text-sm font-medium text-emerald-400">All creatives performing well</p>
                       </div>
                     </div>
                   )}
