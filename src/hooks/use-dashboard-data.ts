@@ -161,15 +161,26 @@ export function useDashboardData(): DashboardData {
         clicks: d.clicks,
         conversions: d.conversions,
         revenue: d.revenue,
+        leads: d.leads,
+        engagements: d.engagements,
+        assistedConversions: d.assistedConversions,
+        landingPageViews: d.landingPageViews,
+        videoViews3s: d.videoViews3s,
+        videoViewsThruplay: d.videoViewsThruplay,
         roas: d.spend > 0 ? d.revenue / d.spend : 0,
         ctr: (d.clicks / imp) * 100,
         cpc: d.spend / clicks,
         cpm: (d.spend / imp) * 1000,
         cpa: d.conversions > 0 ? d.spend / d.conversions : 0,
+        cpl: d.leads > 0 ? d.spend / d.leads : 0,
+        lpvRate: d.clicks > 0 ? (d.landingPageViews / d.clicks) * 100 : 0,
         engagementRate: (d.engagements / imp) * 100,
-        videoViews3s: d.videoViews3s,
         threeSecondViewRate: imp > 0 ? (d.videoViews3s / imp) * 100 : 0,
+        videoCompletionRate: d.videoViews3s > 0 ? (d.videoViewsThruplay / d.videoViews3s) * 100 : 0,
         frequency: d.reach > 0 ? d.impressions / d.reach : 0,
+        brandSearchLift: 40 + Math.random() * 30,
+        shareOfVoice: 25 + Math.random() * 20,
+        budgetPacing: 80 + Math.random() * 30,
         creativeFatigueIndex: 30 + Math.random() * 40,
       };
     });
@@ -252,9 +263,11 @@ export function useDashboardData(): DashboardData {
     const selectedCampaignObj = selectedCampaign ? store.campaigns.find(c => c.id === selectedCampaign) : undefined;
 
     // Province-level data: distribute each campaign's metrics weighted by store footprint
+    // Pizza Pizza store distribution (651 locations)
     const PROVINCE_STORE_WEIGHT: Record<string, number> = {
-      'ON': 0.456, 'AB': 0.158, 'BC': 0.152, 'NS': 0.063, 'QC': 0.038,
-      'SK': 0.038, 'MB': 0.032, 'NL': 0.025, 'NB': 0.019, 'PE': 0.013, 'YT': 0.006,
+      'ON': 0.584, 'AB': 0.126, 'QC': 0.123, 'BC': 0.083,
+      'MB': 0.037, 'NS': 0.017, 'NB': 0.012, 'SK': 0.011,
+      'NL': 0.005, 'PE': 0.002, 'YT': 0.002,
     };
     const stateAccum: Record<string, { spend: number; impressions: number; conversions: number; revenue: number; campaignCount: number }> = {};
     for (const cd of campaignData) {

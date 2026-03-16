@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { REGION_LABELS, CHANNEL_LABELS, type RegionId, type ChannelId, type DateRangePreset } from '@/types';
+import { REGION_LABELS, CHANNEL_LABELS, FUNNEL_LABELS, type RegionId, type ChannelId, type DateRangePreset, type FunnelStage } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -194,6 +194,7 @@ export function HeaderBar() {
     selectedChannels, setSelectedChannels, selectedCampaigns, setSelectedCampaigns,
     attributionModel, setAttributionModel,
     selectedRegion, selectedCampaign, setSelectedRegion, setSelectedCampaign,
+    selectedFunnel, setFunnel,
   } = useAppStore();
 
   const store = useMemo(() => generateAllData(), []);
@@ -316,7 +317,7 @@ export function HeaderBar() {
       <div className="flex items-center justify-between px-8 h-12">
         <div className="flex items-center gap-1.5 min-w-0">
           <button onClick={() => { setSelectedRegion(null); setSelectedCampaign(null); }} className="text-sm font-semibold text-foreground hover:text-teal transition-colors">
-            Indigo
+            Pizza Pizza
           </button>
           {selectedRegion && (
             <>
@@ -376,6 +377,26 @@ export function HeaderBar() {
 
       <div className="flex items-center gap-2 px-8 h-9 border-t border-border/20">
         <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted/30 p-0.5">
+          {(Object.entries(FUNNEL_LABELS) as [FunnelStage, string][]).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setFunnel(value)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap",
+                selectedFunnel === value
+                  ? "bg-card-elevated text-teal"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {value === 'all' ? 'All' : label.replace(' Funnel', '')}
+            </button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5" />
+
         <RegionCountryFilter
           selectedRegions={selectedRegions}
           selectedCountries={selectedCountries}

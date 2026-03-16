@@ -135,6 +135,30 @@ export const DEFAULT_BRAND_KPIS: KPIKey[] = [
   'conversions', 'cpa', 'revenue', 'roas', 'engagementRate', 'threeSecondViewRate', 'budgetPacing'
 ];
 
+// ===== Funnel Stage =====
+export type FunnelStage = 'all' | 'upper' | 'mid' | 'lower';
+
+export const FUNNEL_LABELS: Record<FunnelStage, string> = {
+  all: 'All Funnel',
+  upper: 'Upper Funnel',
+  mid: 'Mid Funnel',
+  lower: 'Lower Funnel',
+};
+
+export const FUNNEL_HERO_KPIS: Record<FunnelStage, KPIKey[]> = {
+  all: ['spend', 'cpm', 'roas'],
+  upper: ['impressions', 'reach', 'cpm'],
+  mid: ['clicks', 'ctr', 'engagementRate'],
+  lower: ['conversions', 'cpa', 'roas'],
+};
+
+export const FUNNEL_CUSTOM_KPIS: Record<FunnelStage, KPIKey[]> = {
+  all: DEFAULT_BRAND_KPIS,
+  upper: ['spend', 'impressions', 'reach', 'frequency', 'cpm', 'videoViews3s', 'videoViewsThruplay', 'threeSecondViewRate', 'brandSearchLift', 'budgetPacing'],
+  mid: ['spend', 'clicks', 'ctr', 'cpc', 'landingPageViews', 'lpvRate', 'engagements', 'engagementRate', 'videoViewsThruplay', 'videoCompletionRate', 'budgetPacing'],
+  lower: ['spend', 'conversions', 'cpa', 'revenue', 'roas', 'leads', 'cpl', 'assistedConversions', 'budgetPacing'],
+};
+
 export const DEFAULT_EXEC_KPIS: KPIKey[] = [
   'spend', 'reach', 'conversions', 'revenue', 'roas', 'cpa',
   'brandSearchLift', 'shareOfVoice', 'budgetPacing', 'anomalyCount'
@@ -159,7 +183,7 @@ export type UserRole = 'agency' | 'exec';
 export type ViewLevel = 'brand' | 'region' | 'campaign';
 
 // ===== News =====
-export type NewsTag = 'brand' | 'publishing' | 'genre' | 'amazon' | 'social' | 'gifting' | 'macro';
+export type NewsTag = 'brand' | 'qsr' | 'menu' | 'delivery' | 'social' | 'sports' | 'sponsorships' | 'competitors' | 'macro';
 export type NewsUrgency = 'low' | 'medium' | 'high';
 
 export interface NewsItem {

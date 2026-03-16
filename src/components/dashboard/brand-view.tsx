@@ -16,11 +16,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Settings2, TrendingUp, TrendingDown, AlertTriangle, Zap, Target, DollarSign, BarChart3, Activity, Eye, ChevronLeft, ChevronRight, Image, Layers } from 'lucide-react';
-import { KPI_CONFIGS, CHANNEL_LABELS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
+import { KPI_CONFIGS, CHANNEL_LABELS, FUNNEL_HERO_KPIS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
 
-const HERO_KPIS: KPIKey[] = ['spend', 'cpm', 'roas'];
-const HERO_COLORS: Record<string, string> = { spend: '#e07060', cpm: '#6b8aad', roas: '#50b89a' };
+const HERO_COLORS: Record<string, string> = {
+  spend: '#e07060', cpm: '#6b8aad', roas: '#50b89a',
+  impressions: '#50b89a', reach: '#8b7ec8',
+  clicks: '#50b89a', ctr: '#6b8aad', engagementRate: '#8b7ec8',
+  conversions: '#50b89a', cpa: '#e07060',
+};
 
 // ─── Creative / Ad Set Data ─────────────────────────────────────────────────
 
@@ -58,62 +62,62 @@ interface AdSet {
 
 const AD_SETS: AdSet[] = [
   {
-    id: 'as-holiday-carousel', name: 'Holiday Gift Guide — Carousel', campaignId: 'ind-holiday-gift', campaignName: 'Holiday Gift Guide',
-    channel: 'instagram', format: 'Carousel', asset: 'holiday-carousel-v3',
+    id: 'as-gameday-carousel', name: 'Game Day Carousel — Instagram', campaignId: 'pp-game-day', campaignName: 'Game Day & Sports Moments',
+    channel: 'instagram', format: 'Carousel', asset: 'gameday-carousel-v3',
     kpis: { spend: 184200, impressions: 12400000, clicks: 248000, ctr: 2.0, conversions: 6820, cpa: 27.01, roas: 4.8, cpm: 14.85, creativeFatigue: 22 },
     kpiDeltas: { spend: 8, impressions: 12, clicks: 15, ctr: 6, conversions: 18, cpa: -10, roas: 14, cpm: -3, creativeFatigue: 4 },
   },
   {
-    id: 'as-booktok-ugc', name: 'BookTok UGC — Short-Form Video', campaignId: 'ind-booktok-readers', campaignName: 'BookTok Readers',
-    channel: 'tiktok', format: 'Short-Form Video', asset: 'booktok-ugc-creator-pack',
+    id: 'as-tiktok-foodies-ugc', name: 'TikTok Foodies UGC — Short-Form Video', campaignId: 'pp-tiktok-foodies', campaignName: 'TikTok Foodies',
+    channel: 'tiktok', format: 'Short-Form Video', asset: 'foodies-ugc-creator-pack',
     kpis: { spend: 96800, impressions: 8900000, clicks: 356000, ctr: 4.0, conversions: 4120, cpa: 23.50, roas: 5.2, cpm: 10.88, creativeFatigue: 14 },
     kpiDeltas: { spend: 5, impressions: 22, clicks: 28, ctr: 8, conversions: 24, cpa: -15, roas: 22, cpm: -6, creativeFatigue: 2 },
   },
   {
-    id: 'as-plum-search', name: 'Plum+ Sign-Up — Search Ads', campaignId: 'ind-plum-growth', campaignName: 'Plum+ Membership Growth',
-    channel: 'google-search', format: 'Search', asset: 'plum-rsa-v2',
+    id: 'as-app-download-search', name: 'App Download — Search Ads', campaignId: 'pp-loyalty-app', campaignName: 'Loyalty App Acquisition',
+    channel: 'google-search', format: 'Search', asset: 'loyalty-app-rsa-v2',
     kpis: { spend: 142500, impressions: 3200000, clicks: 192000, ctr: 6.0, conversions: 11520, cpa: 12.37, roas: 8.1, cpm: 44.53, creativeFatigue: 8 },
     kpiDeltas: { spend: 3, impressions: 6, clicks: 9, ctr: 4, conversions: 12, cpa: -8, roas: 10, cpm: -2, creativeFatigue: 1 },
   },
   {
-    id: 'as-cozy-lifestyle-reel', name: 'Cozy Lifestyle — Reels', campaignId: 'ind-cozy-lifestyle', campaignName: 'Cozy Lifestyle Enthusiasts',
-    channel: 'instagram', format: 'Reels', asset: 'cozy-candle-reel-v1',
+    id: 'as-plant-based-reel', name: 'Plant-Based — Reels', campaignId: 'pp-plant-based', campaignName: 'Plant-Based & Better-For-You',
+    channel: 'instagram', format: 'Reels', asset: 'plant-based-reel-v1',
     kpis: { spend: 68400, impressions: 5600000, clicks: 196000, ctr: 3.5, conversions: 2940, cpa: 23.27, roas: 3.9, cpm: 12.21, creativeFatigue: 38 },
     kpiDeltas: { spend: 12, impressions: 8, clicks: 4, ctr: -3, conversions: 2, cpa: 6, roas: -4, cpm: 5, creativeFatigue: 12 },
   },
   {
-    id: 'as-gift-ctv', name: 'Gift Givers — CTV Spot', campaignId: 'ind-gift-givers', campaignName: 'Gift Givers & Seasonal Shoppers',
-    channel: 'ctv', format: 'CTV :30', asset: 'gift-guide-ctv-30s',
+    id: 'as-family-deals-ctv', name: 'Family Meal Deals — CTV Spot', campaignId: 'pp-family-deals', campaignName: 'Family Meal Deals',
+    channel: 'ctv', format: 'CTV :30', asset: 'family-deals-ctv-30s',
     kpis: { spend: 210000, impressions: 4800000, clicks: 48000, ctr: 1.0, conversions: 3360, cpa: 62.50, roas: 2.1, cpm: 43.75, creativeFatigue: 18 },
     kpiDeltas: { spend: 6, impressions: 10, clicks: 8, ctr: -1, conversions: 5, cpa: 2, roas: -2, cpm: -3, creativeFatigue: 3 },
   },
   {
-    id: 'as-bestseller-display', name: 'Bestseller — Programmatic Display', campaignId: 'ind-bestseller', campaignName: 'Bestseller Awareness',
-    channel: 'ttd', format: 'Display', asset: 'bestseller-banner-300x250',
+    id: 'as-new-menu-display', name: 'New Menu Launch — Programmatic Display', campaignId: 'pp-new-menu', campaignName: 'New Menu Launch',
+    channel: 'ttd', format: 'Display', asset: 'new-menu-banner-300x250',
     kpis: { spend: 78600, impressions: 9200000, clicks: 138000, ctr: 1.5, conversions: 1932, cpa: 40.68, roas: 2.4, cpm: 8.54, creativeFatigue: 42 },
     kpiDeltas: { spend: 4, impressions: -2, clicks: -6, ctr: -4, conversions: -8, cpa: 12, roas: -10, cpm: 6, creativeFatigue: 16 },
   },
   {
-    id: 'as-parents-fb', name: 'Millennial Parents — Lead Gen', campaignId: 'ind-millennial-parents', campaignName: 'Millennial Parents',
-    channel: 'facebook', format: 'Lead Form', asset: 'parents-leadgen-v4',
+    id: 'as-late-night-fb', name: 'Late Night Cravings — Lead Gen', campaignId: 'pp-late-night', campaignName: 'Late Night Cravings',
+    channel: 'facebook', format: 'Lead Form', asset: 'late-night-leadgen-v4',
     kpis: { spend: 54300, impressions: 3100000, clicks: 124000, ctr: 4.0, conversions: 3720, cpa: 14.60, roas: 6.8, cpm: 17.52, creativeFatigue: 10 },
     kpiDeltas: { spend: 2, impressions: 4, clicks: 7, ctr: 3, conversions: 9, cpa: -6, roas: 8, cpm: -1, creativeFatigue: -2 },
   },
   {
-    id: 'as-plum-retain-email', name: 'Plum+ Retention — Retargeting', campaignId: 'ind-plum-retain', campaignName: 'Plum+ Retention & Upsell',
-    channel: 'facebook', format: 'Dynamic Retargeting', asset: 'plum-dpa-catalogue',
+    id: 'as-loyalty-retain-retarget', name: 'Loyalty Retention — Retargeting', campaignId: 'pp-loyalty-retain', campaignName: 'Loyalty Retention & Upsell',
+    channel: 'facebook', format: 'Dynamic Retargeting', asset: 'loyalty-dpa-catalogue',
     kpis: { spend: 62100, impressions: 2800000, clicks: 112000, ctr: 4.0, conversions: 5600, cpa: 11.09, roas: 9.2, cpm: 22.18, creativeFatigue: 6 },
     kpiDeltas: { spend: 1, impressions: 3, clicks: 5, ctr: 2, conversions: 7, cpa: -5, roas: 6, cpm: -2, creativeFatigue: -1 },
   },
   {
-    id: 'as-private-label-tiktok', name: 'Private Label — TikTok Spark', campaignId: 'ind-private-label', campaignName: 'Private Label Push',
-    channel: 'tiktok', format: 'Spark Ad', asset: 'love-lore-spark-v2',
+    id: 'as-catering-tiktok', name: 'Catering & Group Orders — TikTok Spark', campaignId: 'pp-catering', campaignName: 'Catering & Group Orders',
+    channel: 'tiktok', format: 'Spark Ad', asset: 'catering-spark-v2',
     kpis: { spend: 88200, impressions: 7400000, clicks: 296000, ctr: 4.0, conversions: 3848, cpa: 22.92, roas: 4.4, cpm: 11.92, creativeFatigue: 26 },
     kpiDeltas: { spend: 10, impressions: 18, clicks: 20, ctr: 5, conversions: 16, cpa: -6, roas: 8, cpm: -4, creativeFatigue: 8 },
   },
   {
-    id: 'as-ecom-retarget-search', name: 'E-Commerce — Search Retargeting', campaignId: 'ind-ecom-retarget', campaignName: 'E-Commerce Retargeting',
-    channel: 'google-search', format: 'Search', asset: 'ecom-rlsa-v3',
+    id: 'as-digital-orders-search', name: 'Digital Ordering — Search Retargeting', campaignId: 'pp-digital-orders', campaignName: 'Digital Ordering Retargeting',
+    channel: 'google-search', format: 'Search', asset: 'digital-orders-rlsa-v3',
     kpis: { spend: 48900, impressions: 1600000, clicks: 112000, ctr: 7.0, conversions: 6720, cpa: 7.28, roas: 12.4, cpm: 30.56, creativeFatigue: 4 },
     kpiDeltas: { spend: 2, impressions: 5, clicks: 8, ctr: 3, conversions: 10, cpa: -7, roas: 9, cpm: -3, creativeFatigue: 0 },
   },
@@ -267,7 +271,8 @@ const stateColumns: Column<StateDatum>[] = [
 
 export function BrandView() {
   const data = useDashboardData();
-  const { customKpis, setCustomKpis, compareEnabled } = useAppStore();
+  const { customKpis, setCustomKpis, compareEnabled, selectedFunnel } = useAppStore();
+  const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
   const drillToRegion = useAppStore(s => s.drillToRegion);
   const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
 
@@ -303,7 +308,7 @@ export function BrandView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {HERO_KPIS.map((key) => {
+          {heroKpis.map((key) => {
             const config = KPI_CONFIGS.find(c => c.key === key);
             if (!config) return null;
             const value = data.currentKPIs[key] as number;
@@ -350,7 +355,7 @@ export function BrandView() {
 
       <CampaignOverviewChart campaignData={data.campaignData} />
 
-      <BentoKPIGrid data={data} compareEnabled={compareEnabled} />
+      <BentoKPIGrid data={data} compareEnabled={compareEnabled} funnelStage={selectedFunnel} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Performance Highlights */}

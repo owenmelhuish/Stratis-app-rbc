@@ -8,24 +8,29 @@ import { TrendChart } from '@/components/shared/trend-chart';
 import { DataTableWrapper, type Column } from '@/components/shared/data-table-wrapper';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CHANNEL_LABELS, CHANNEL_COLORS, KPI_CONFIGS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
+import { CHANNEL_LABELS, CHANNEL_COLORS, KPI_CONFIGS, FUNNEL_HERO_KPIS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
 import { WorldMapChart } from '@/components/shared/world-map-chart';
 import { Lightbulb, Palette } from 'lucide-react';
 import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
-const HERO_KPIS: KPIKey[] = ['spend', 'conversions', 'roas'];
-const HERO_COLORS: Record<string, string> = { spend: '#e07060', conversions: '#50b89a', roas: '#50b89a' };
+const HERO_COLORS: Record<string, string> = {
+  spend: '#e07060', conversions: '#50b89a', roas: '#50b89a',
+  impressions: '#50b89a', reach: '#8b7ec8', cpm: '#6b8aad',
+  clicks: '#50b89a', ctr: '#6b8aad', engagementRate: '#8b7ec8',
+  cpa: '#e07060',
+};
 
 interface ChannelRow { channel: ChannelId; channelLabel: string; color: string; kpis: AggregatedKPIs; }
 
 export function CampaignView() {
   const data = useDashboardData();
-  const { customKpis, selectedCampaign, compareEnabled } = useAppStore();
+  const { customKpis, selectedCampaign, compareEnabled, selectedFunnel } = useAppStore();
+  const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
   const campaign = data.selectedCampaignObj;
 
-  const secondaryKpis = customKpis.filter(k => !HERO_KPIS.includes(k));
+  const secondaryKpis = customKpis.filter(k => !heroKpis.includes(k));
 
   const channelRows: ChannelRow[] = (Object.entries(data.channelData) as [ChannelId, AggregatedKPIs][])
     .filter(([, kpis]) => kpis.spend > 0)
@@ -68,7 +73,7 @@ export function CampaignView() {
 
       <div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {HERO_KPIS.map((key) => {
+          {heroKpis.map((key) => {
             const config = KPI_CONFIGS.find(c => c.key === key);
             if (!config) return null;
             const value = data.currentKPIs[key] as number;

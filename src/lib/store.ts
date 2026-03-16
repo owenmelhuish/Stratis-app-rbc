@@ -13,8 +13,9 @@ import type {
   InsightStatus,
   DismissReason,
   ActionLogEntry,
+  FunnelStage,
 } from '@/types';
-import { DEFAULT_BRAND_KPIS } from '@/types';
+import { DEFAULT_BRAND_KPIS, FUNNEL_CUSTOM_KPIS } from '@/types';
 
 const STORAGE_KEY = 'stratis-app-state';
 const TODAY = new Date('2026-02-12');
@@ -48,6 +49,7 @@ interface PersistedState {
   compareEnabled: boolean;
   role: UserRole;
   customKpis: KPIKey[];
+  selectedFunnel: FunnelStage;
   insightStatuses: Record<string, InsightStatus>;
   insightApprovals: Record<string, string>;
   insightDismissals: Record<string, DismissReason>;
@@ -85,6 +87,7 @@ export interface AppState {
   selectedRegion: RegionId | null;
   selectedCampaign: string | null;
   customKpis: KPIKey[];
+  selectedFunnel: FunnelStage;
   insightStatuses: Record<string, InsightStatus>;
   insightApprovals: Record<string, string>;
   insightDismissals: Record<string, DismissReason>;
@@ -107,6 +110,7 @@ export interface AppState {
   setSelectedCampaignStatuses: (statuses: CampaignStatus[]) => void;
   setAttributionModel: (model: AttributionModel) => void;
   setCustomKpis: (kpis: KPIKey[]) => void;
+  setFunnel: (funnel: FunnelStage) => void;
   setLoading: (loading: boolean) => void;
   setApprovedDrawerOpen: (open: boolean) => void;
 
@@ -139,6 +143,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   selectedRegion: null,
   selectedCampaign: null,
   customKpis: [...DEFAULT_BRAND_KPIS],
+  selectedFunnel: 'all',
   insightStatuses: {},
   insightApprovals: {},
   insightDismissals: {},
@@ -166,6 +171,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setSelectedCampaignStatuses: (statuses) => set({ selectedCampaignStatuses: statuses }),
   setAttributionModel: (model) => set({ attributionModel: model }),
   setCustomKpis: (kpis) => { set({ customKpis: kpis }); get().syncToStorage(); },
+  setFunnel: (funnel) => { set({ selectedFunnel: funnel, customKpis: [...FUNNEL_CUSTOM_KPIS[funnel]] }); get().syncToStorage(); },
   setLoading: (loading) => set({ isLoading: loading }),
   setApprovedDrawerOpen: (open) => set({ approvedDrawerOpen: open }),
   setSelectedRegion: (region) => set({ selectedRegion: region }),
@@ -227,6 +233,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       compareEnabled: persisted.compareEnabled ?? s.compareEnabled,
       role: persisted.role ?? s.role,
       customKpis: persisted.customKpis ?? s.customKpis,
+      selectedFunnel: persisted.selectedFunnel ?? s.selectedFunnel,
       insightStatuses: persisted.insightStatuses ?? s.insightStatuses,
       insightApprovals: persisted.insightApprovals ?? s.insightApprovals,
       insightDismissals: persisted.insightDismissals ?? s.insightDismissals,
@@ -242,6 +249,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       compareEnabled: s.compareEnabled,
       role: s.role,
       customKpis: s.customKpis,
+      selectedFunnel: s.selectedFunnel,
       insightStatuses: s.insightStatuses,
       insightApprovals: s.insightApprovals,
       insightDismissals: s.insightDismissals,

@@ -41,6 +41,7 @@ import {
   type ChannelId,
   type AggregatedKPIs,
   type Campaign,
+  type FunnelStage,
 } from "@/types";
 import {
   formatCurrency,
@@ -66,7 +67,50 @@ interface BentoKPIGridProps {
     }>;
   };
   compareEnabled: boolean;
+  funnelStage?: FunnelStage;
 }
+
+// Funnel-specific grid layout mappings
+interface GridLayout {
+  dualMetric1: KPIKey;
+  dualMetric2: KPIKey;
+  row1Col3: KPIKey;
+  row1Col4: KPIKey;
+  row2Col1: KPIKey;
+  row2Col2: KPIKey;
+  row2Wide: KPIKey;
+  row3Col1: KPIKey;
+  row3Col2: KPIKey;
+  row3Col3: KPIKey;
+  row3Col4: KPIKey;
+}
+
+const FUNNEL_GRID_LAYOUTS: Record<FunnelStage, GridLayout> = {
+  all: {
+    dualMetric1: 'impressions', dualMetric2: 'reach',
+    row1Col3: 'cpm', row1Col4: 'roas',
+    row2Col1: 'spend', row2Col2: 'reach', row2Wide: 'clicks',
+    row3Col1: 'frequency', row3Col2: 'videoViews3s', row3Col3: 'engagementRate', row3Col4: 'budgetPacing',
+  },
+  upper: {
+    dualMetric1: 'impressions', dualMetric2: 'reach',
+    row1Col3: 'cpm', row1Col4: 'threeSecondViewRate',
+    row2Col1: 'spend', row2Col2: 'frequency', row2Wide: 'videoViews3s',
+    row3Col1: 'brandSearchLift', row3Col2: 'videoViewsThruplay', row3Col3: 'budgetPacing', row3Col4: 'cpm',
+  },
+  mid: {
+    dualMetric1: 'clicks', dualMetric2: 'landingPageViews',
+    row1Col3: 'ctr', row1Col4: 'engagementRate',
+    row2Col1: 'spend', row2Col2: 'cpc', row2Wide: 'engagements',
+    row3Col1: 'videoCompletionRate', row3Col2: 'lpvRate', row3Col3: 'videoViewsThruplay', row3Col4: 'budgetPacing',
+  },
+  lower: {
+    dualMetric1: 'conversions', dualMetric2: 'leads',
+    row1Col3: 'cpa', row1Col4: 'roas',
+    row2Col1: 'spend', row2Col2: 'revenue', row2Wide: 'assistedConversions',
+    row3Col1: 'budgetPacing', row3Col2: 'cpl', row3Col3: 'leads', row3Col4: 'conversions',
+  },
+};
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -81,12 +125,22 @@ const METRIC_COLORS: Record<string, string> = {
   cpc: "#e07060",
   cpm: "#e07060",
   cpa: "#e07060",
+  cpl: "#e07060",
+  ctr: "#6b8aad",
   frequency: "#8b7ec8",
   videoViews3s: "#50b89a",
+  videoViewsThruplay: "#50b89a",
   videoCompletionRate: "#50b89a",
   threeSecondViewRate: "#50b89a",
   engagementRate: "#8b7ec8",
+  engagements: "#8b7ec8",
   budgetPacing: "#50b89a",
+  leads: "#50b89a",
+  landingPageViews: "#50b89a",
+  lpvRate: "#6b8aad",
+  assistedConversions: "#50b89a",
+  brandSearchLift: "#8b7ec8",
+  shareOfVoice: "#8b7ec8",
 };
 
 const TOOLTIP_STYLE: React.CSSProperties = {
@@ -1165,32 +1219,32 @@ interface Persona {
 
 const PERSONAS: Persona[] = [
   {
-    id: "booktok-discovery", name: "BookTok Discovery Reader", shortName: "BookTok",
+    id: "tiktok-foodie", name: "TikTok Foodie", shortName: "TikTok",
     reachShare: 32, engagementIdx: 93, deltaPercent: 18, color: "#50b89a",
     kpis: { cvr: 4.2, cvrDelta: 12, cpa: 8.40, cpaDelta: -15, aov: 34.50, aovDelta: 6, roas: 3.8, roasDelta: 22, ltv: 142, ltvDelta: 9, frequency: 2.4, frequencyDelta: 5 },
     topChannels: [{ name: "TikTok", share: 42 }, { name: "Instagram", share: 28 }, { name: "Spotify", share: 18 }],
-    topCategories: [{ name: "Fiction", share: 38 }, { name: "Romance", share: 24 }, { name: "Fantasy", share: 20 }],
+    topCategories: [{ name: "Pizza", share: 38 }, { name: "Sides", share: 24 }, { name: "Drinks", share: 20 }],
   },
   {
-    id: "plum-value-maxer", name: "The Plum+ Value Maxer", shortName: "Plum+",
+    id: "loyalty-member", name: "Pizza Pizza Club Loyalist", shortName: "Loyalty",
     reachShare: 28, engagementIdx: 89, deltaPercent: 8, color: "#3d8c76",
     kpis: { cvr: 6.1, cvrDelta: 4, cpa: 5.20, cpaDelta: -8, aov: 52.80, aovDelta: 11, roas: 5.2, roasDelta: 14, ltv: 289, ltvDelta: 16, frequency: 3.8, frequencyDelta: 3 },
     topChannels: [{ name: "Google Search", share: 34 }, { name: "Meta", share: 26 }, { name: "CTV", share: 22 }],
-    topCategories: [{ name: "Bestsellers", share: 30 }, { name: "Home & Gift", share: 28 }, { name: "Stationery", share: 22 }],
+    topCategories: [{ name: "Combos", share: 30 }, { name: "Family Packs", share: 28 }, { name: "Specials", share: 22 }],
   },
   {
-    id: "literary-traditionalist", name: "The Literary Traditionalist", shortName: "Literary",
+    id: "family-value-seeker", name: "Family Value Seeker", shortName: "Family",
     reachShare: 24, engagementIdx: 76, deltaPercent: 3, color: "#2d6658",
     kpis: { cvr: 3.4, cvrDelta: 1, cpa: 11.60, cpaDelta: -2, aov: 41.20, aovDelta: 3, roas: 2.9, roasDelta: 5, ltv: 198, ltvDelta: 4, frequency: 1.6, frequencyDelta: -1 },
     topChannels: [{ name: "Google Search", share: 40 }, { name: "The Trade Desk", share: 24 }, { name: "CTV", share: 20 }],
-    topCategories: [{ name: "Literary Fiction", share: 44 }, { name: "Non-Fiction", share: 32 }, { name: "Biography", share: 14 }],
+    topCategories: [{ name: "Family Packs", share: 44 }, { name: "Combos", share: 32 }, { name: "Sides", share: 14 }],
   },
   {
-    id: "selfcare-lifestyle", name: "The Self Care Lifestyle Shopper", shortName: "Self Care",
+    id: "late-night-craver", name: "The Late Night Craver", shortName: "Late Night",
     reachShare: 16, engagementIdx: 82, deltaPercent: 14, color: "#1e453b",
     kpis: { cvr: 5.6, cvrDelta: 18, cpa: 6.80, cpaDelta: -12, aov: 48.60, aovDelta: 15, roas: 4.1, roasDelta: 19, ltv: 176, ltvDelta: 12, frequency: 2.1, frequencyDelta: 8 },
     topChannels: [{ name: "Instagram", share: 36 }, { name: "TikTok", share: 28 }, { name: "Spotify", share: 20 }],
-    topCategories: [{ name: "Wellness", share: 34 }, { name: "Home & Gift", share: 30 }, { name: "Candles & Fragrance", share: 22 }],
+    topCategories: [{ name: "Pizza", share: 34 }, { name: "Wings", share: 30 }, { name: "Dips & Extras", share: 22 }],
   },
 ];
 
@@ -1402,15 +1456,20 @@ function PersonaExplorer() {
 
 // ─── Main Grid ───────────────────────────────────────────────────────────────
 
-export function BentoKPIGrid({ data, compareEnabled }: BentoKPIGridProps) {
+export function BentoKPIGrid({ data, compareEnabled, funnelStage = 'all' }: BentoKPIGridProps) {
   const { currentKPIs, previousKPIs, timeSeries, channelData, campaignData } =
     data;
+  const layout = FUNNEL_GRID_LAYOUTS[funnelStage];
 
   function delta(key: KPIKey) {
     return getDelta(
       currentKPIs[key] as number,
       previousKPIs ? (previousKPIs[key] as number) : undefined
     );
+  }
+
+  function getLabel(key: KPIKey): string {
+    return getKPIConfig(key)?.label || key;
   }
 
   return (
@@ -1425,115 +1484,109 @@ export function BentoKPIGrid({ data, compareEnabled }: BentoKPIGridProps) {
         }}
       >
         {/* ── Row 1 ─────────────────────────────────────────── */}
-        {/* Impressions + Reach – dual metric barcode – 2col */}
         <DualMetricBentoCard
-          metric1Key="impressions"
-          metric1Value={currentKPIs.impressions}
-          metric1Label="Impressions"
-          metric2Key="reach"
-          metric2Value={currentKPIs.reach}
-          metric2Label="Reach"
+          metric1Key={layout.dualMetric1}
+          metric1Value={currentKPIs[layout.dualMetric1] as number}
+          metric1Label={getLabel(layout.dualMetric1)}
+          metric2Key={layout.dualMetric2}
+          metric2Value={currentKPIs[layout.dualMetric2] as number}
+          metric2Label={getLabel(layout.dualMetric2)}
           timeSeries={timeSeries}
         />
 
-        {/* CPM – channel horizontal bars – 1col */}
         <BentoCard
-          kpiKey="cpm"
-          value={currentKPIs.cpm}
-          deltaInfo={delta("cpm")}
+          kpiKey={layout.row1Col3}
+          value={currentKPIs[layout.row1Col3] as number}
+          deltaInfo={delta(layout.row1Col3)}
           compareEnabled={compareEnabled}
         >
-          <ChannelHorizontalBars channelData={channelData} metricKey="cpm" />
+          <ChannelHorizontalBars channelData={channelData} metricKey={layout.row1Col3} />
         </BentoCard>
 
-        {/* ROAS – line chart – 1col */}
         <BentoCard
-          kpiKey="roas"
-          value={currentKPIs.roas}
-          deltaInfo={delta("roas")}
+          kpiKey={layout.row1Col4}
+          value={currentKPIs[layout.row1Col4] as number}
+          deltaInfo={delta(layout.row1Col4)}
           compareEnabled={compareEnabled}
         >
-          <AreaMiniChart data={timeSeries} metricKey="roas" />
+          <AreaMiniChart data={timeSeries} metricKey={layout.row1Col4} />
         </BentoCard>
 
         {/* ── Row 2 ─────────────────────────────────────────── */}
-        {/* Spend – donut with side legend – 1col */}
         <BentoCard
-          kpiKey="spend"
-          value={currentKPIs.spend}
-          deltaInfo={delta("spend")}
+          kpiKey={layout.row2Col1}
+          value={currentKPIs[layout.row2Col1] as number}
+          deltaInfo={delta(layout.row2Col1)}
           compareEnabled={compareEnabled}
         >
-          <DonutWithSideLegend channelData={channelData} metricKey="spend" />
+          <DonutWithSideLegend channelData={channelData} metricKey={layout.row2Col1} />
         </BentoCard>
 
-        {/* Reach – campaign delta bars – 1col */}
         <BentoCard
-          kpiKey="reach"
-          value={currentKPIs.reach}
-          deltaInfo={delta("reach")}
+          kpiKey={layout.row2Col2}
+          value={currentKPIs[layout.row2Col2] as number}
+          deltaInfo={delta(layout.row2Col2)}
           compareEnabled={compareEnabled}
         >
           <CampaignDeltaBars
             campaignData={campaignData}
-            metricKey="reach"
+            metricKey={layout.row2Col2}
           />
         </BentoCard>
 
-        {/* Clicks – bar chart – 2col */}
         <BentoCard
-          kpiKey="clicks"
-          value={currentKPIs.clicks}
-          deltaInfo={delta("clicks")}
+          kpiKey={layout.row2Wide}
+          value={currentKPIs[layout.row2Wide] as number}
+          deltaInfo={delta(layout.row2Wide)}
           compareEnabled={compareEnabled}
           colSpan={2}
         >
-          <BarMiniChart data={timeSeries} metricKey="clicks" />
+          <BarMiniChart data={timeSeries} metricKey={layout.row2Wide} />
         </BentoCard>
 
         {/* ── Row 3 ─────────────────────────────────────────── */}
-        {/* Frequency – trending scale – 1col */}
         <BentoCard
-          kpiKey="frequency"
-          value={currentKPIs.frequency}
-          deltaInfo={delta("frequency")}
+          kpiKey={layout.row3Col1}
+          value={currentKPIs[layout.row3Col1] as number}
+          deltaInfo={delta(layout.row3Col1)}
           compareEnabled={compareEnabled}
         >
           <ChannelTrendingScale
             channelData={channelData}
             timeSeries={timeSeries}
-            metricKey="frequency"
+            metricKey={layout.row3Col1}
           />
         </BentoCard>
 
-        {/* Video Views (3s) – area chart – 1col */}
         <BentoCard
-          kpiKey="videoViews3s"
-          value={currentKPIs.videoViews3s}
-          deltaInfo={delta("videoViews3s")}
+          kpiKey={layout.row3Col2}
+          value={currentKPIs[layout.row3Col2] as number}
+          deltaInfo={delta(layout.row3Col2)}
           compareEnabled={compareEnabled}
         >
-          <AreaMiniChart data={timeSeries} metricKey="videoViews3s" />
+          <AreaMiniChart data={timeSeries} metricKey={layout.row3Col2} />
         </BentoCard>
 
-        {/* Engagement Rate – channel pie – 1col */}
         <BentoCard
-          kpiKey="engagementRate"
-          value={currentKPIs.engagementRate}
-          deltaInfo={delta("engagementRate")}
+          kpiKey={layout.row3Col3}
+          value={currentKPIs[layout.row3Col3] as number}
+          deltaInfo={delta(layout.row3Col3)}
           compareEnabled={compareEnabled}
         >
-          <ChannelPie channelData={channelData} metricKey="engagementRate" />
+          <ChannelPie channelData={channelData} metricKey={layout.row3Col3} />
         </BentoCard>
 
-        {/* Budget Pacing – gauge – 1col */}
         <BentoCard
-          kpiKey="budgetPacing"
-          value={currentKPIs.budgetPacing}
-          deltaInfo={delta("budgetPacing")}
+          kpiKey={layout.row3Col4}
+          value={currentKPIs[layout.row3Col4] as number}
+          deltaInfo={delta(layout.row3Col4)}
           compareEnabled={compareEnabled}
         >
-          <BudgetGauge pacing={currentKPIs.budgetPacing} />
+          {layout.row3Col4 === 'budgetPacing' ? (
+            <BudgetGauge pacing={currentKPIs.budgetPacing} />
+          ) : (
+            <ChannelHorizontalBars channelData={channelData} metricKey={layout.row3Col4} />
+          )}
         </BentoCard>
       </div>
 

@@ -682,7 +682,7 @@ function ChannelOptActionSection({
           onClick={onComplete}
         >
           <Check className="h-3.5 w-3.5" />
-          Mark as Complete
+          Launch
         </Button>
       </div>
     </div>
@@ -797,7 +797,7 @@ function DefaultActionSection({
           onClick={onComplete}
         >
           <Check className="h-3.5 w-3.5" />
-          Mark as Complete
+          Launch
         </Button>
       </div>
     </div>

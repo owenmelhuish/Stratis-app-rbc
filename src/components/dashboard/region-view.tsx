@@ -11,23 +11,28 @@ import { DataTableWrapper, type Column } from '@/components/shared/data-table-wr
 import { ComparisonDelta } from '@/components/shared/comparison-delta';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { REGION_LABELS, KPI_CONFIGS, type KPIKey, type Campaign, type AggregatedKPIs } from '@/types';
+import { REGION_LABELS, KPI_CONFIGS, FUNNEL_HERO_KPIS, type KPIKey, type Campaign, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
 import { ArrowRight, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 
-const HERO_KPIS: KPIKey[] = ['spend', 'conversions', 'roas'];
-const HERO_COLORS: Record<string, string> = { spend: '#e07060', conversions: '#50b89a', roas: '#50b89a' };
+const HERO_COLORS: Record<string, string> = {
+  spend: '#e07060', conversions: '#50b89a', roas: '#50b89a',
+  impressions: '#50b89a', reach: '#8b7ec8', cpm: '#6b8aad',
+  clicks: '#50b89a', ctr: '#6b8aad', engagementRate: '#8b7ec8',
+  cpa: '#e07060',
+};
 
 interface CampaignRow { campaign: Campaign; kpis: AggregatedKPIs; previousKpis?: AggregatedKPIs; }
 
 export function RegionView() {
   const data = useDashboardData();
-  const { customKpis, selectedRegion, compareEnabled } = useAppStore();
+  const { customKpis, selectedRegion, compareEnabled, selectedFunnel } = useAppStore();
+  const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
   const drillToCampaign = useAppStore(s => s.drillToCampaign);
   const regionLabel = selectedRegion ? REGION_LABELS[selectedRegion] : '';
 
-  const secondaryKpis = customKpis.filter(k => !HERO_KPIS.includes(k));
+  const secondaryKpis = customKpis.filter(k => !heroKpis.includes(k));
 
   const campaignColumns: Column<CampaignRow>[] = [
     { key: 'name', label: 'Campaign', sortable: true, getValue: (r) => r.campaign.name,
@@ -61,7 +66,7 @@ export function RegionView() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{regionLabel} — Key Metrics</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {HERO_KPIS.map((key) => {
+          {heroKpis.map((key) => {
             const config = KPI_CONFIGS.find(c => c.key === key);
             if (!config) return null;
             const value = data.currentKPIs[key] as number;
