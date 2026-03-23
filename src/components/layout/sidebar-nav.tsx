@@ -2,13 +2,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Newspaper, Lightbulb, Paintbrush, MessageSquareText, FlaskConical, BarChart3, DollarSign, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Newspaper, Lightbulb, Paintbrush, MessageSquareText, FlaskConical, BarChart3, DollarSign, TrendingUp, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navSections = [
   {
     label: 'GENERAL',
     items: [
+      { href: '/client-context', label: 'Client Context', icon: Settings2 },
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
