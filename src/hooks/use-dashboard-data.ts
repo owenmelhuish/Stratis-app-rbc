@@ -455,35 +455,72 @@ export function useDashboardData(): DashboardData {
     const avgRoas = currentKPIs.spend > 0 ? currentKPIs.revenue / currentKPIs.spend : 0;
     const totalSpend = currentKPIs.spend;
     const audienceData = allAudienceIds.map(audId => {
-      const audCamps = campaigns.filter(c => c.audiences.includes(audId));
-      const aDays = collectDays(audCamps, start, end, channelFilter);
-      const aKpis = aggregateMetrics(aDays);
-      const spend = aKpis.spend;
-      const roas = spend > 0 ? aKpis.revenue / spend : 0;
-      const shareOfSpend = totalSpend > 0 ? (spend / totalSpend) * 100 : 0;
-      const freq = aKpis.reach > 0 ? aKpis.impressions / aKpis.reach : 0;
-      const saturation = Math.min(100, (freq / 15) * 100);
-      // Marginal return: compare recent vs prior 7d within the period
+      let audSpend = 0, audRevenue = 0, audImpressions = 0, audReach = 0;
+      let recentSpend = 0, recentRevenue = 0, priorSpend = 0, priorRevenue = 0;
       const midDate = format(subDays(parseISO(end), 7), 'yyyy-MM-dd');
-      const recentDays = collectDays(audCamps, midDate, end, channelFilter);
-      const priorDays = collectDays(audCamps, format(subDays(parseISO(midDate), 7), 'yyyy-MM-dd'), format(subDays(parseISO(midDate), 1), 'yyyy-MM-dd'), channelFilter);
-      const recentKpis = aggregateMetrics(recentDays);
-      const priorKpis = aggregateMetrics(priorDays);
-      const recentRoas = recentKpis.spend > 0 ? recentKpis.revenue / recentKpis.spend : 0;
-      const priorRoas = priorKpis.spend > 0 ? priorKpis.revenue / priorKpis.spend : 0;
+      const priorStart = format(subDays(parseISO(midDate), 7), 'yyyy-MM-dd');
+      const priorEnd = format(subDays(parseISO(midDate), 1), 'yyyy-MM-dd');
+
+      for (const camp of viewCampaigns) {
+        if (!camp.audiences.includes(audId)) continue;
+        const splitFactor = 1 / camp.audiences.length;
+        for (const ch of camp.channels) {
+          if (channelFilter && !channelFilter.includes(ch)) continue;
+          const chData = store.dailyData[camp.id]?.[ch];
+          if (!chData) continue;
+          const days = filterDailyByDate(chData, start, end);
+          for (const d of days) {
+            audSpend += d.spend * splitFactor;
+            audRevenue += d.revenue * splitFactor;
+            audImpressions += d.impressions * splitFactor;
+            audReach += d.reach * splitFactor;
+          }
+          // Marginal return sub-periods
+          const recentD = filterDailyByDate(chData, midDate, end);
+          for (const d of recentD) { recentSpend += d.spend * splitFactor; recentRevenue += d.revenue * splitFactor; }
+          const priorD = filterDailyByDate(chData, priorStart, priorEnd);
+          for (const d of priorD) { priorSpend += d.spend * splitFactor; priorRevenue += d.revenue * splitFactor; }
+        }
+      }
+
+      const roas = audSpend > 0 ? audRevenue / audSpend : 0;
+      const shareOfSpend = totalSpend > 0 ? (audSpend / totalSpend) * 100 : 0;
+      const freq = audReach > 0 ? audImpressions / audReach : 0;
+      const saturation = Math.min(100, (freq / 15) * 100);
+      const recentRoas = recentSpend > 0 ? recentRevenue / recentSpend : 0;
+      const priorRoas = priorSpend > 0 ? priorRevenue / priorSpend : 0;
       const marginalReturn: 'rising' | 'flat' | 'declining' = recentRoas > priorRoas * 1.05 ? 'rising' : recentRoas < priorRoas * 0.95 ? 'declining' : 'flat';
-      // Health + action
+
+      const aboveAvg = roas >= avgRoas * 0.9;
+      const belowAvg = roas < avgRoas * 0.9;
+      const lowShare = shareOfSpend < (100 / allAudienceIds.length) * 0.6;
       let health: 'healthy' | 'watch' | 'over-saturated' | 'under-invested' = 'healthy';
       let action: 'scale' | 'hold' | 'reduce' | 'grow' = 'hold';
-      if (roas >= avgRoas && saturation < 60) { health = 'healthy'; action = 'scale'; }
-      else if (roas >= avgRoas && saturation >= 60 && saturation < 80) { health = 'watch'; action = 'hold'; }
-      else if (roas < avgRoas && saturation > 75) { health = 'over-saturated'; action = 'reduce'; }
-      else if (shareOfSpend < 8 && roas >= avgRoas && saturation < 50) { health = 'under-invested'; action = 'grow'; }
-      else if (roas < avgRoas) { health = 'watch'; action = 'reduce'; }
+      if (lowShare && aboveAvg && saturation < 40) { health = 'under-invested'; action = 'grow'; }
+      else if (aboveAvg && saturation < 50) { health = 'healthy'; action = 'scale'; }
+      else if (aboveAvg && saturation < 70) { health = 'watch'; action = 'hold'; }
+      else if (belowAvg && saturation > 60) { health = 'over-saturated'; action = 'reduce'; }
+      else if (belowAvg) { health = 'watch'; action = 'reduce'; }
+      else { health = 'healthy'; action = 'hold'; }
       return { id: audId, label: AUDIENCE_LABELS[audId], shareOfSpend, roas, marginalReturn, saturation, health, action };
     });
 
-    // ===== Channel Frequency Data =====
+    // ===== Channel Frequency Data (spend-based model) =====
+    const AUDIENCE_SIZE_ESTIMATES: Record<string, number> = {
+      'young-professionals': 4_500_000, 'families': 5_200_000, 'new-canadians': 1_200_000,
+      'high-net-worth': 800_000, 'students': 2_800_000, 'retirees': 3_500_000,
+      'business-owners': 1_500_000, 'mass-market': 12_000_000,
+    };
+    const CHANNEL_REACH_RATES: Record<string, Record<string, number>> = {
+      'young-professionals': { 'instagram': 0.75, 'facebook': 0.65, 'tiktok': 0.60, 'google-search': 0.80, 'ttd': 0.40, 'ctv': 0.35, 'spotify': 0.55, 'linkedin': 0.50, 'ooh': 0.30 },
+      'families': { 'instagram': 0.65, 'facebook': 0.70, 'tiktok': 0.30, 'google-search': 0.75, 'ttd': 0.45, 'ctv': 0.55, 'spotify': 0.35, 'linkedin': 0.25, 'ooh': 0.40 },
+      'new-canadians': { 'instagram': 0.70, 'facebook': 0.75, 'tiktok': 0.40, 'google-search': 0.65, 'ttd': 0.20, 'ctv': 0.15, 'spotify': 0.25, 'linkedin': 0.35, 'ooh': 0.20 },
+      'high-net-worth': { 'instagram': 0.45, 'facebook': 0.40, 'tiktok': 0.10, 'google-search': 0.70, 'ttd': 0.35, 'ctv': 0.50, 'spotify': 0.20, 'linkedin': 0.65, 'ooh': 0.45 },
+      'students': { 'instagram': 0.85, 'facebook': 0.55, 'tiktok': 0.80, 'google-search': 0.60, 'ttd': 0.15, 'ctv': 0.10, 'spotify': 0.70, 'linkedin': 0.05, 'ooh': 0.15 },
+      'retirees': { 'instagram': 0.25, 'facebook': 0.50, 'tiktok': 0.05, 'google-search': 0.65, 'ttd': 0.30, 'ctv': 0.45, 'spotify': 0.10, 'linkedin': 0.30, 'ooh': 0.35 },
+      'business-owners': { 'instagram': 0.45, 'facebook': 0.50, 'tiktok': 0.15, 'google-search': 0.75, 'ttd': 0.25, 'ctv': 0.20, 'spotify': 0.15, 'linkedin': 0.70, 'ooh': 0.25 },
+      'mass-market': { 'instagram': 0.60, 'facebook': 0.65, 'tiktok': 0.35, 'google-search': 0.70, 'ttd': 0.40, 'ctv': 0.45, 'spotify': 0.30, 'linkedin': 0.20, 'ooh': 0.35 },
+    };
     const freqAudiences = allAudienceIds;
     const freqChannels: ChannelId[] = ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify', 'linkedin', 'ooh'];
     const matrix: Record<string, Record<string, number>> = {};
@@ -494,17 +531,31 @@ export function useDashboardData(): DashboardData {
       matrix[aud] = {};
       let totalFreq = 0;
       for (const ch of freqChannels) {
-        const relCamps = campaigns.filter(c => c.audiences.includes(aud) && c.channels.includes(ch));
-        const chDays: DailyMetrics[][] = [];
-        for (const camp of relCamps) {
+        let cellWeeklySpend = 0, cellAvgCPM = 0, cellSpendCount = 0;
+        for (const camp of viewCampaigns) {
+          if (!camp.audiences.includes(aud)) continue;
+          if (!camp.channels.includes(ch)) continue;
+          const splitFactor = 1 / camp.audiences.length;
           const chData = store.dailyData[camp.id]?.[ch];
-          if (chData) chDays.push(filterDailyByDate(chData, start, end));
+          if (!chData) continue;
+          const days = filterDailyByDate(chData, start, end);
+          let chSpend = 0, chImpressions = 0;
+          for (const d of days) { chSpend += d.spend * splitFactor; chImpressions += d.impressions * splitFactor; }
+          cellWeeklySpend += chSpend / weeks;
+          if (chImpressions > 0 && chSpend > 0) { cellAvgCPM += (chSpend / chImpressions) * 1000; cellSpendCount++; }
         }
-        const merged = mergeDailyArrays(chDays);
-        const agg = aggregateMetrics(merged);
-        const weeklyFreq = agg.reach > 0 ? (agg.impressions / agg.reach) / weeks : 0;
-        matrix[aud][ch] = Math.round(weeklyFreq * 10) / 10;
-        totalFreq += weeklyFreq;
+        if (cellWeeklySpend <= 0 || cellSpendCount === 0) {
+          matrix[aud][ch] = 0;
+        } else {
+          const avgCPM = cellAvgCPM / cellSpendCount;
+          const weeklyImpressions = (cellWeeklySpend / avgCPM) * 1000;
+          const audienceSize = AUDIENCE_SIZE_ESTIMATES[aud] || 3_000_000;
+          const channelReach = CHANNEL_REACH_RATES[aud]?.[ch] || 0.3;
+          const reachableAudience = audienceSize * channelReach;
+          const freq = reachableAudience > 0 ? weeklyImpressions / reachableAudience : 0;
+          matrix[aud][ch] = Math.round(freq * 10) / 10;
+        }
+        totalFreq += matrix[aud][ch];
       }
       totals[aud] = Math.round(totalFreq * 10) / 10;
       freqStatuses[aud] = totalFreq < 6 ? 'under-reached' : totalFreq <= 8 ? 'optimal' : totalFreq <= 12 ? 'elevated' : 'over-exposed';
@@ -627,20 +678,18 @@ export function useDashboardData(): DashboardData {
         }
       }
     }
-    // Previous period
+    // Always compute previous period for conversion value trends
     const cvPrevMap: Record<string, { conversions: number; revenue: number }> = {};
-    if (compareEnabled) {
-      for (const camp of viewCampaigns) {
-        const pl = camp.productLine;
-        if (!cvPrevMap[pl]) cvPrevMap[pl] = { conversions: 0, revenue: 0 };
-        for (const ch of camp.channels) {
-          const chData = store.dailyData[camp.id]?.[ch];
-          if (!chData) continue;
-          const days = filterDailyByDate(chData, prevStart, prevEnd);
-          for (const d of days) {
-            cvPrevMap[pl].conversions += d.conversions;
-            cvPrevMap[pl].revenue += d.revenue;
-          }
+    for (const camp of viewCampaigns) {
+      const pl = camp.productLine;
+      if (!cvPrevMap[pl]) cvPrevMap[pl] = { conversions: 0, revenue: 0 };
+      for (const ch of camp.channels) {
+        const chData = store.dailyData[camp.id]?.[ch];
+        if (!chData) continue;
+        const days = filterDailyByDate(chData, prevStart, prevEnd);
+        for (const d of days) {
+          cvPrevMap[pl].conversions += d.conversions;
+          cvPrevMap[pl].revenue += d.revenue;
         }
       }
     }

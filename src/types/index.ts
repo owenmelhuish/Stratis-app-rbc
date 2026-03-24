@@ -301,7 +301,7 @@ export interface NewsItem {
 }
 
 // ===== Insights =====
-export type InsightCategory = 'performance' | 'creative' | 'competitive' | 'platform' | 'macro';
+export type InsightCategory = 'cross-agency' | 'cross-product' | 'cross-channel' | 'market-intelligence' | 'portfolio';
 export type InsightStatus = 'new' | 'reviewed' | 'approved' | 'dismissed' | 'snoozed';
 export type InsightScope = 'brand' | 'division' | 'product' | 'campaign';
 

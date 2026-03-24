@@ -49,7 +49,9 @@ export interface ChannelAllocation {
   direction: 'increased' | 'reduced';
 }
 
-export type MetricsHint = 'roas-frequency' | 'budget-spend' | 'engagement-frequency' | 'engagement-spend' | 'viewrate-impressions';
+export type MetricsHint = 'roas-frequency' | 'budget-spend' | 'engagement-frequency' | 'engagement-spend' | 'viewrate-impressions'
+  | 'cpm-overlap' | 'frequency-waste' | 'attribution-lift' | 'cpc-competition' | 'awareness-conversion'
+  | 'cpa-geo' | 'conversions-market' | 'roas-saturation' | 'convrate-volume';
 
 export interface InsightChartData {
   historical: ChartPoint[];
@@ -145,6 +147,69 @@ const METRIC_CONFIGS: Record<MetricsHint, MetricConfig> = {
     improveDeltaMin: 0.015, improveDeltaMax: 0.04,
     roundP: 4, roundS: 0,
     minP: 0.005, minS: 2000,
+  },
+  'cpm-overlap': {
+    primaryLabel: 'CPM ($)', secondaryLabel: 'AGENCY OVERLAP',
+    metricTabs: ['Comparison', 'CPM Trend', 'Overlap'],
+    basePMin: 16, basePMax: 28, baseSMin: 10, baseSMax: 30,
+    noiseP: 2.5, noiseS: 4, trendMin: 0.3, trendMax: 0.8,
+    improveDeltaMin: -4, improveDeltaMax: -8, roundP: 1, roundS: 0, minP: 8, minS: 0,
+  },
+  'frequency-waste': {
+    primaryLabel: 'WEEKLY FREQUENCY', secondaryLabel: 'EST. WASTE ($K)',
+    metricTabs: ['Comparison', 'Frequency', 'Waste'],
+    basePMin: 8, basePMax: 16, baseSMin: 20, baseSMax: 60,
+    noiseP: 1.2, noiseS: 6, trendMin: 0.15, trendMax: 0.4,
+    improveDeltaMin: -3, improveDeltaMax: -6, roundP: 1, roundS: 0, minP: 2, minS: 5,
+  },
+  'attribution-lift': {
+    primaryLabel: 'DIRECT ROAS', secondaryLabel: 'ASSISTED CONV. RATIO',
+    metricTabs: ['Comparison', 'Direct ROAS', 'Assisted Ratio'],
+    basePMin: 0.3, basePMax: 0.8, baseSMin: 1.5, baseSMax: 3.5,
+    noiseP: 0.08, noiseS: 0.3, trendMin: -0.01, trendMax: 0.01,
+    improveDeltaMin: 0.5, improveDeltaMax: 1.2, roundP: 2, roundS: 1, minP: 0.1, minS: 0.5,
+  },
+  'cpc-competition': {
+    primaryLabel: 'CPC ($)', secondaryLabel: 'AUCTION OVERLAP',
+    metricTabs: ['Comparison', 'CPC Trend', 'Overlap'],
+    basePMin: 3.5, basePMax: 6.0, baseSMin: 15, baseSMax: 40,
+    noiseP: 0.6, noiseS: 5, trendMin: 0.08, trendMax: 0.2,
+    improveDeltaMin: -1.0, improveDeltaMax: -2.0, roundP: 2, roundS: 0, minP: 1, minS: 0,
+  },
+  'awareness-conversion': {
+    primaryLabel: 'AWARENESS SPEND ($K)', secondaryLabel: 'CONV. CAMPAIGN ROAS',
+    metricTabs: ['Comparison', 'Awareness Spend', 'Conv. ROAS'],
+    basePMin: 150, basePMax: 350, baseSMin: 2.2, baseSMax: 3.8,
+    noiseP: 25, noiseS: 0.25, trendMin: 3, trendMax: 8,
+    improveDeltaMin: 0.3, improveDeltaMax: 0.8, roundP: 0, roundS: 2, minP: 50, minS: 1.0,
+  },
+  'cpa-geo': {
+    primaryLabel: 'CPA ($)', secondaryLabel: 'BUDGET SHARE (%)',
+    metricTabs: ['Comparison', 'CPA by Geo', 'Budget'],
+    basePMin: 80, basePMax: 180, baseSMin: 15, baseSMax: 45,
+    noiseP: 12, noiseS: 3, trendMin: 1.5, trendMax: 4,
+    improveDeltaMin: -20, improveDeltaMax: -40, roundP: 0, roundS: 0, minP: 30, minS: 5,
+  },
+  'conversions-market': {
+    primaryLabel: 'CONVERSIONS', secondaryLabel: 'SPEND ($K)',
+    metricTabs: ['Comparison', 'Conversions', 'Spend'],
+    basePMin: 80, basePMax: 200, baseSMin: 15, baseSMax: 40,
+    noiseP: 18, noiseS: 4, trendMin: -2, trendMax: 3,
+    improveDeltaMin: 30, improveDeltaMax: 80, roundP: 0, roundS: 0, minP: 20, minS: 5,
+  },
+  'roas-saturation': {
+    primaryLabel: 'ROAS', secondaryLabel: 'SATURATION (%)',
+    metricTabs: ['Comparison', 'ROAS', 'Saturation'],
+    basePMin: 1.5, basePMax: 4.5, baseSMin: 30, baseSMax: 85,
+    noiseP: 0.3, noiseS: 5, trendMin: -0.02, trendMax: 0.02,
+    improveDeltaMin: 0.3, improveDeltaMax: 0.8, roundP: 1, roundS: 0, minP: 0.5, minS: 10,
+  },
+  'convrate-volume': {
+    primaryLabel: 'GATE CONV. RATE (%)', secondaryLabel: 'APPLICATION VOLUME',
+    metricTabs: ['Comparison', 'Conv. Rate', 'Volume'],
+    basePMin: 16, basePMax: 24, baseSMin: 200, baseSMax: 500,
+    noiseP: 1.2, noiseS: 30, trendMin: -0.3, trendMax: -0.1,
+    improveDeltaMin: 2, improveDeltaMax: 5, roundP: 1, roundS: 0, minP: 8, minS: 50,
   },
 };
 

@@ -26,11 +26,11 @@ import { generateInsightChartData, interpolateImproved, type MetricsHint } from 
 import { InsightDetailModal } from '@/components/insights/insight-detail-modal';
 
 const CATEGORY_CONFIG: Record<InsightCategory, { label: string; color: string }> = {
-  performance: { label: 'Performance', color: 'bg-blue-500/20 text-blue-400' },
-  creative: { label: 'Creative', color: 'bg-purple-500/20 text-purple-400' },
-  competitive: { label: 'Competitive', color: 'bg-red-500/20 text-red-400' },
-  platform: { label: 'Platform', color: 'bg-cyan-500/20 text-cyan-400' },
-  macro: { label: 'Macro', color: 'bg-yellow-500/20 text-yellow-400' },
+  'cross-agency': { label: 'Cross-Agency', color: 'bg-purple-500/20 text-purple-400' },
+  'cross-product': { label: 'Cross-Product', color: 'bg-cyan-500/20 text-cyan-400' },
+  'cross-channel': { label: 'Cross-Channel', color: 'bg-blue-500/20 text-blue-400' },
+  'market-intelligence': { label: 'Market Intelligence', color: 'bg-red-500/20 text-red-400' },
+  'portfolio': { label: 'Portfolio Strategy', color: 'bg-amber-500/20 text-amber-400' },
 };
 
 const STATUS_OPTIONS: { value: InsightStatus | 'all'; label: string }[] = [
@@ -51,23 +51,28 @@ interface ScopeGroup {
 
 const SCOPE_GROUPS: ScopeGroup[] = [
   {
-    key: 'campaign',
-    label: 'CAMPAIGN',
-    description: 'Macro-level tracking of total spend and flight progress',
-    filter: (item) => item.scope === 'campaign' && item.category !== 'creative',
+    key: 'cross-agency',
+    label: 'CROSS-AGENCY',
+    description: 'Insights requiring visibility across agency boundaries',
+    filter: (item) => item.category === 'cross-agency',
   },
   {
-    key: 'cross-channel',
-    label: 'CROSS CHANNEL',
-    description: 'Portfolio-level allocation and efficiency signals',
-    filter: (item) =>
-      (item.scope === 'brand' || item.scope === 'division' || item.scope === 'product') && item.category !== 'creative',
+    key: 'cross-product-channel',
+    label: 'CROSS-PRODUCT & CHANNEL',
+    description: 'Product interaction and channel mix intelligence',
+    filter: (item) => item.category === 'cross-product' || item.category === 'cross-channel',
   },
   {
-    key: 'ad',
-    label: 'AD',
-    description: 'Asset-level performance, fatigue detection, and scaling',
-    filter: (item) => item.category === 'creative',
+    key: 'market-intelligence',
+    label: 'MARKET INTELLIGENCE',
+    description: 'Performance correlated with market events and competitor activity',
+    filter: (item) => item.category === 'market-intelligence',
+  },
+  {
+    key: 'portfolio',
+    label: 'PORTFOLIO STRATEGY',
+    description: 'Full-portfolio optimization across the enterprise',
+    filter: (item) => item.category === 'portfolio',
   },
 ];
 

@@ -45,13 +45,19 @@ import type { InsightChartData, ChannelAllocation } from '@/lib/insight-chart-da
 
 // --- Derive metrics hint from insight ---
 function deriveMetricsHint(insight: Insight): MetricsHint {
-  const t = insight.title;
-  if (t.includes('Pacing') || t.includes('Budget')) return 'budget-spend';
-  if (t.includes('Hook Retention') || t.includes('View Rate')) return 'viewrate-impressions';
-  if (t.includes('Saturation') || t.includes('Frequency Cap')) return 'engagement-frequency';
-  if (t.includes('Channel') || t.includes('Dependence') || t.includes('Divergence') || t.includes('Opportunity')) return 'engagement-spend';
-  if (insight.category === 'creative') return 'engagement-frequency';
-  return 'engagement-frequency';
+  const mapping: Record<string, MetricsHint> = {
+    'insight-agency-collision': 'cpm-overlap',
+    'insight-frequency-overexposure': 'frequency-waste',
+    'insight-attribution-blind': 'attribution-lift',
+    'insight-product-cannibalization': 'cpc-competition',
+    'insight-awareness-correlation': 'awareness-conversion',
+    'insight-geo-arbitrage': 'cpa-geo',
+    'insight-competitive-response': 'conversions-market',
+    'insight-market-event-window': 'conversions-market',
+    'insight-portfolio-rebalance': 'roas-saturation',
+    'insight-funnel-bottleneck': 'convrate-volume',
+  };
+  return mapping[insight.id] || 'engagement-spend';
 }
 
 // --- Generate asset name from insight ID ---
@@ -72,25 +78,36 @@ function generateAssetName(insightId: string): string {
   const aspects = ['1x1', '16x9', '9x16'];
   const aspect = aspects[(hash >> 12) % 3];
   const code = insightId.replace(/[^a-zA-Z0-9]/g, '').slice(-3).toUpperCase();
-  return `DEEPWTR25-${code}-Ad${String(adNum).padStart(2, '0')}-${fmt}-${lang}-Trailer-${dur}-${aspect}`;
+  return `RBC26-${code}-Ad${String(adNum).padStart(2, '0')}-${fmt}-${lang}-${dur}-${aspect}`;
 }
 
 // --- Check if insight is creative/ad type ---
-function isCreativeType(insight: Insight): boolean {
-  return insight.category === 'creative';
+function isCreativeType(_insight: Insight): boolean {
+  return false; // No creative-category insights in orchestration model
 }
 
-// --- Check if insight is channel optimization type ---
-function isChannelOptType(insight: Insight): boolean {
-  const t = insight.title;
-  return (
-    t.includes('Saturation') ||
-    t.includes('Dependence') ||
-    t.includes('Divergence') ||
-    t.includes('Opportunity') ||
-    t.includes('Channel Mix') ||
-    t.includes('Diminishing')
-  );
+// --- Direct action vs strategic brief ---
+const DIRECT_ACTION_INSIGHT_IDS = new Set([
+  'insight-geo-arbitrage',
+  'insight-portfolio-rebalance',
+]);
+
+function isDirectActionType(insight: Insight): boolean {
+  return DIRECT_ACTION_INSIGHT_IDS.has(insight.id);
+}
+
+function getBriefRecipients(insight: Insight): string[] {
+  const mapping: Record<string, string[]> = {
+    'insight-agency-collision': ['VP Media', 'Omnicom Account Lead', 'In-House Media Director'],
+    'insight-frequency-overexposure': ['VP Media', 'All Agency Leads', 'Ad Ops'],
+    'insight-attribution-blind': ['VP Analytics', 'Measurement Team', 'VP Media'],
+    'insight-product-cannibalization': ['VP Media', 'Omnicom Account Lead', 'Product Marketing — Cards'],
+    'insight-awareness-correlation': ['CMO', 'VP Media', 'CFO Office'],
+    'insight-competitive-response': ['CMO', 'VP Media', 'Omnicom Lead', 'Publicis Lead', 'In-House Director'],
+    'insight-market-event-window': ['VP Media', 'Ad Ops', 'Omnicom Account Lead'],
+    'insight-funnel-bottleneck': ['VP Digital', 'Product — Mortgages', 'Product — Wealth', 'UX Team'],
+  };
+  return mapping[insight.id] || ['VP Media', 'Agency Lead'];
 }
 
 interface InsightDetailModalProps {
@@ -207,7 +224,7 @@ export function InsightDetailModal({
   if (!insight || !chartData) return null;
 
   const creative = isCreativeType(insight);
-  const channelOpt = isChannelOptType(insight);
+  const directAction = isDirectActionType(insight);
   const assetName = creative ? generateAssetName(insight.id) : '';
 
   // TODAY index label for reference area
@@ -438,24 +455,17 @@ export function InsightDetailModal({
                   onSkip={() => onDiscard(insight.id)}
                   onPause={() => onComplete(insight.id)}
                 />
-              ) : channelOpt ? (
-                <ChannelOptActionSection
-                  insight={insight}
-                  channels={adjustedChannels}
-                  avgEngagementRate={chartData.avgEngagementRate}
-                  avgSpend={chartData.avgSpend}
-                  budgetIntensity={budgetIntensity}
-                  onBudgetChange={setBudgetIntensity}
-                  moveAmount={budgetMoveAmount.amount}
-                  movePercent={budgetMoveAmount.percent}
-                  onDiscard={() => onDiscard(insight.id)}
-                  onComplete={() => onComplete(insight.id)}
-                />
-              ) : (
+              ) : directAction ? (
                 <DefaultActionSection
                   insight={insight}
                   budgetIntensity={budgetIntensity}
                   onBudgetChange={setBudgetIntensity}
+                  onDiscard={() => onDiscard(insight.id)}
+                  onComplete={() => onComplete(insight.id)}
+                />
+              ) : (
+                <StrategicBriefSection
+                  insight={insight}
                   onDiscard={() => onDiscard(insight.id)}
                   onComplete={() => onComplete(insight.id)}
                 />
@@ -689,7 +699,109 @@ function ChannelOptActionSection({
   );
 }
 
-// ─── Default Action Section (non-creative, non-channel) ───
+// ─── Strategic Brief Action Section ───
+
+function StrategicBriefSection({
+  insight,
+  onDiscard,
+  onComplete,
+}: {
+  insight: Insight;
+  onDiscard: () => void;
+  onComplete: () => void;
+}) {
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+
+  const toggleStep = (stepId: string) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
+  const recipients = getBriefRecipients(insight);
+
+  return (
+    <div className="space-y-4">
+      {insight.actionSteps.map((step) => {
+        const done = completedSteps.has(step.id);
+        return (
+          <button
+            key={step.id}
+            onClick={() => toggleStep(step.id)}
+            className={cn(
+              'flex items-start gap-3 w-full text-left rounded-lg px-3 py-2.5 border transition-colors',
+              done
+                ? 'border-emerald-500/30 bg-emerald-500/5'
+                : 'border-border/20 bg-muted/10 hover:bg-muted/20'
+            )}
+          >
+            {done ? (
+              <Check className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
+            ) : (
+              <Circle className="h-5 w-5 text-muted-foreground/40 mt-0.5 shrink-0" />
+            )}
+            <div>
+              <p className={cn('text-sm font-semibold', done && 'text-emerald-300/80')}>
+                {step.title}
+              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                {step.subtitle}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+
+      <div className="border border-border/30 rounded-lg p-3 bg-muted/10">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+          Brief recipients
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {recipients.map((r) => (
+            <span
+              key={r}
+              className="text-[10px] px-2 py-1 rounded-md bg-muted/30 text-muted-foreground border border-border/20"
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2.5 bg-muted/20 rounded-lg p-3">
+        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          The brief will include this insight&apos;s analysis, supporting evidence, recommended actions, and projected impact — formatted for distribution to the recipients above.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 pt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-10 text-xs font-semibold gap-1.5 border-border/60 rounded-full"
+          onClick={onDiscard}
+        >
+          <X className="h-3.5 w-3.5" />
+          Discard Insight
+        </Button>
+        <Button
+          size="sm"
+          className="flex-1 h-10 text-xs font-semibold gap-1.5 bg-foreground text-background hover:bg-foreground/90 rounded-full"
+          onClick={onComplete}
+        >
+          <Check className="h-3.5 w-3.5" />
+          Generate Brief
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Default Action Section (direct action with slider) ───
 
 function DefaultActionSection({
   insight,
