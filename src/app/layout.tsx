@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STRATIS — Pizza Pizza",
-  description: "Unified intelligence layer for global campaign performance",
+  title: "STRATIS — RBC",
+  description: "Enterprise orchestration layer for cross-channel campaign intelligence",
 };
 
 export default function RootLayout({

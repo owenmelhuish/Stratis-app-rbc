@@ -24,9 +24,9 @@ import {
 
 const SUGGESTIONS = [
   { icon: BarChart3, label: "Campaign Performance", prompt: "How are my campaigns performing this week?" },
-  { icon: TrendingUp, label: "ROAS Analysis", prompt: "Which channels have the highest ROAS?" },
-  { icon: Lightbulb, label: "Optimization Tips", prompt: "What budget optimizations do you recommend?" },
-  { icon: Target, label: "Audience Insights", prompt: "Show me audience insights across campaigns" },
+  { icon: TrendingUp, label: "ROAS Analysis", prompt: "Which channels have the highest ROAS for card acquisition?" },
+  { icon: Lightbulb, label: "Optimization Tips", prompt: "What budget optimizations do you recommend across divisions?" },
+  { icon: Target, label: "Audience Insights", prompt: "Show me audience performance across product lines" },
 ];
 
 // ─── Mock conversation ──────────────────────────────────────────────────────
@@ -49,15 +49,15 @@ function getAIResponse(userMessage: string): string {
     return `Here's a snapshot of your campaign performance this week:
 
 **Overall Metrics (Last 7 Days)**
-- **Total Spend:** $412,800 (+3.2% vs. prior week)
-- **Revenue:** $8.6M (+5.1%)
-- **ROAS:** 20.9x (stable)
-- **Conversions:** 27,340 (+4.8%)
+- **Total Spend:** $1.82M (+3.2% vs. prior week)
+- **Revenue:** $4.1M (+5.1%)
+- **ROAS:** 2.25x (stable)
+- **Conversions:** 8,340 (+4.8%)
 
 **Top Performers:**
-1. **Google Search — Brand Terms** — 42.1x ROAS, $89K spend
-2. **Meta — Retargeting** — 31.7x ROAS, $54K spend
-3. **TikTok — Sapphire Reserve Launch** — 18.3x ROAS, $67K spend
+1. **Google Search — RBC Mortgage Branded Terms** — 4.8x ROAS, $189K spend
+2. **Meta — Avion Retargeting** — 3.7x ROAS, $124K spend
+3. **TikTok — ION Card Launch** — 2.9x ROAS, $167K spend
 
 **Needs Attention:**
 - TTD Programmatic display CPA is up 12% — recommend reducing frequency cap
@@ -71,12 +71,12 @@ Would you like me to drill into any specific campaign or channel?`;
 
 | Channel | ROAS | Spend | Revenue |
 |---------|------|-------|---------|
-| Google Search | 32.4x | $385K | $12.5M |
-| Meta (Facebook + IG) | 22.1x | $520K | $11.5M |
-| TikTok | 18.7x | $310K | $5.8M |
-| The Trade Desk | 12.3x | $195K | $2.4M |
+| Google Search | 4.2x | $385K | $1.62M |
+| Meta (Facebook + IG) | 2.8x | $520K | $1.46M |
+| TikTok | 2.4x | $310K | $744K |
+| The Trade Desk | 1.8x | $195K | $351K |
 
-**Key Insight:** Google Search continues to lead on efficiency, but Meta drives the highest absolute revenue. TikTok is showing strong growth momentum — ROAS is up 2.3x from last month.
+**Key Insight:** Google Search continues to lead on efficiency, but Meta drives the highest absolute revenue. TikTok is showing strong growth momentum — ROAS is up 0.6x from last month on ION and student campaigns.
 
 **Recommendation:** Consider shifting 5-8% of TTD budget toward TikTok to capture the upward trend while maintaining Search investment.`;
   }
@@ -85,41 +85,41 @@ Would you like me to drill into any specific campaign or channel?`;
     return `Based on my analysis, here are my top 3 budget optimization recommendations:
 
 **1. Reallocate TTD Underperformers → TikTok** 🔄
-Move ~$40K/month from low-performing TTD segments (CPA > $25) to TikTok prospecting. Expected impact: +$680K revenue/month.
+Move ~$40K/month from low-performing TTD segments (CPA > $180) to TikTok prospecting for ION and student campaigns. Expected impact: +$96K revenue/month.
 
 **2. Increase Google Brand Bid Caps** ⬆️
-Your brand terms are hitting budget caps by 2pm daily. Increasing daily budget by 15% ($13K/month) could capture an estimated 4,200 additional high-intent clicks.
+Your branded mortgage and credit card terms are hitting budget caps by 2pm daily. Increasing daily budget by 15% ($13K/month) could capture an estimated 4,200 additional high-intent clicks.
 
 **3. Consolidate Meta Ad Sets** 🎯
-You have 14 ad sets with <$50/day budget. Consolidating to 6 will help Meta's algorithm optimize faster. Expected CPA reduction: 8-12%.
+You have 14 ad sets with <$50/day budget across Avion and Rewards campaigns. Consolidating to 6 will help Meta's algorithm optimize faster. Expected CPA reduction: 8-12%.
 
-**Total projected impact:** +$1.2M revenue/month with only $53K additional spend.
+**Total projected impact:** +$280K revenue/month with only $53K additional spend.
 
 Want me to create an implementation plan for any of these?`;
   }
 
   if (lower.includes("audience") || lower.includes("insight")) {
-    return `Here's what I'm seeing across your audience personas:
+    return `Here's what I'm seeing across your audience segments:
 
-**Top Converting Personas:**
-- **TikTok Foodie (18-34)** — 4.2% CVR, $9.80 CPA — Social-first discovery driving strong conversion on trending menu items and LTOs. TikTok and Instagram are primary channels.
-- **The Pizza Pizza Club Loyalist** — 5.8% CVR, $7.20 CPA — Highest conversion rate across all personas. Loyalty members respond strongly to exclusive offers, points multipliers, and member-only deals.
-- **The Family Value Seeker (35-55)** — 2.9% CVR, $14.50 CPA — Steady, high-AOV buyers driven by family meal deals and combo offers. Strongest on Google Search and Facebook.
-- **The Late Night Craver (18-35)** — 3.4% CVR, $11.30 CPA — High-frequency delivery orderers, peak ordering between 10PM-2AM. Instagram and TikTok driving awareness.
+**Top Converting Segments:**
+- **Young Professionals (25-34)** — 3.8% CVR, $142 CPA — Strong conversion on ION card and Direct Investing campaigns. TikTok and Instagram are primary discovery channels.
+- **High-Net-Worth ($200K+ HHI)** — 2.1% CVR, $285 CPA — Highest lifetime value segment. Dominion Securities and Avion Infinite driving strong portfolio returns via LinkedIn and CTV.
+- **Families (35-55)** — 2.9% CVR, $168 CPA — Steady mortgage and insurance converters. Google Search and Facebook are primary channels.
+- **Students (18-24)** — 4.2% CVR, $62 CPA — Highest conversion rate on ION Student Crossover. TikTok and Spotify driving awareness efficiently.
 
 **Emerging Opportunity:**
-The TikTok Foodie persona is showing a 340% increase in engagement with pizza content on TikTok and Spotify over the past 30 days. This segment is also driving unexpected upsell into premium toppings — 28% of TikTok-influenced orders include a premium upgrade.
+The Students segment is showing a 240% increase in engagement with TFSA and investing content on TikTok over the past 30 days. This segment is also driving unexpected crossover into Direct Investing — 18% of student ION cardholders have opened a TFSA within 90 days.
 
-**Recommendation:** Expand TikTok Foodies campaign with Spotify audio ads targeting food enthusiasts during commute hours. Estimated incremental reach: 1.8M uniques/month with strong upsell potential.
+**Recommendation:** Expand ION Student Crossover with Direct Investing cross-sell creative on TikTok. Estimated incremental account openings: 2,400/month.
 
 Shall I draft a targeting strategy?`;
   }
 
   return `I've analyzed your question. Here's what I found:
 
-Based on your current campaign data across all channels, I can see several patterns worth highlighting:
+Based on your current campaign data across all channels and divisions, I can see several patterns worth highlighting:
 
-- Your overall portfolio ROAS is strong and trending above the specialty retail benchmark
+- Your overall portfolio ROAS is strong at 2.25x, trending above the financial services benchmark
 - Spend pacing is on track at 94% of monthly budget with 8 days remaining
 - 3 campaigns have been flagged for creative refresh based on declining engagement metrics
 

@@ -1,11 +1,90 @@
-// ===== Core Hierarchy =====
-export type RegionId = 'north-america';
+// ===== Enterprise Hierarchy =====
 
-export const REGION_LABELS: Record<RegionId, string> = {
-  'north-america': 'North America',
+// --- Business Divisions ---
+export type DivisionId = 'pcb' | 'wealth' | 'insurance' | 'capital-markets';
+
+export const DIVISION_LABELS: Record<DivisionId, string> = {
+  'pcb': 'Personal & Commercial Banking',
+  'wealth': 'Wealth Management',
+  'insurance': 'Insurance',
+  'capital-markets': 'Capital Markets',
 };
 
-export type ChannelId = 'instagram' | 'facebook' | 'tiktok' | 'google-search' | 'ttd' | 'ctv' | 'spotify';
+// --- Agency Partners ---
+export type AgencyId = 'omnicom' | 'publicis' | 'wpp' | 'in-house' | 'other';
+
+export const AGENCY_LABELS: Record<AgencyId, string> = {
+  'omnicom': 'Omnicom Media Group',
+  'publicis': 'Publicis Groupe',
+  'wpp': 'WPP',
+  'in-house': 'RBC In-House',
+  'other': 'Other Agencies',
+};
+
+// --- Product Lines ---
+export type ProductLineId =
+  | 'avion' | 'ion' | 'rewards'
+  | 'mortgage' | 'direct-investing' | 'dominion-securities'
+  | 'insurance-products' | 'student' | 'newcomer'
+  | 'small-business' | 'commercial-lending' | 'gic-savings';
+
+export const PRODUCT_LINE_LABELS: Record<ProductLineId, string> = {
+  'avion': 'Avion',
+  'ion': 'ION',
+  'rewards': 'RBC Rewards',
+  'mortgage': 'Mortgages & Home Equity',
+  'direct-investing': 'RBC Direct Investing',
+  'dominion-securities': 'RBC Dominion Securities',
+  'insurance-products': 'Insurance Products',
+  'student': 'Student Banking',
+  'newcomer': 'Newcomer Banking',
+  'small-business': 'Small Business Banking',
+  'commercial-lending': 'Commercial Lending',
+  'gic-savings': 'GICs & Savings',
+};
+
+export interface ProductLine {
+  id: ProductLineId;
+  label: string;
+  division: DivisionId;
+  agencies: AgencyId[];
+}
+
+// --- Audience Segments ---
+export type AudienceId =
+  | 'young-professionals' | 'families' | 'new-canadians'
+  | 'high-net-worth' | 'students' | 'retirees'
+  | 'business-owners' | 'mass-market';
+
+export const AUDIENCE_LABELS: Record<AudienceId, string> = {
+  'young-professionals': 'Young Professionals',
+  'families': 'Families',
+  'new-canadians': 'New Canadians',
+  'high-net-worth': 'High-Net-Worth',
+  'students': 'Students',
+  'retirees': 'Retirees',
+  'business-owners': 'Business Owners',
+  'mass-market': 'Mass Market',
+};
+
+// --- Geographic Regions ---
+export type GeoId = 'national' | 'ontario' | 'quebec' | 'western' | 'atlantic';
+
+export const GEO_LABELS: Record<GeoId, string> = {
+  'national': 'National',
+  'ontario': 'Ontario',
+  'quebec': 'Quebec',
+  'western': 'Western Canada',
+  'atlantic': 'Atlantic Canada',
+};
+
+/** @deprecated Use GeoId. Kept for backward compatibility during migration. */
+export type RegionId = GeoId;
+/** @deprecated Use GEO_LABELS. Kept for backward compatibility during migration. */
+export const REGION_LABELS = GEO_LABELS;
+
+// ===== Channels =====
+export type ChannelId = 'instagram' | 'facebook' | 'tiktok' | 'google-search' | 'ttd' | 'ctv' | 'spotify' | 'linkedin' | 'ooh';
 
 export const CHANNEL_LABELS: Record<ChannelId, string> = {
   'instagram': 'Instagram',
@@ -15,6 +94,8 @@ export const CHANNEL_LABELS: Record<ChannelId, string> = {
   'ttd': 'The Trade Desk',
   'ctv': 'CTV',
   'spotify': 'Spotify',
+  'linkedin': 'LinkedIn',
+  'ooh': 'Out-of-Home',
 };
 
 export const CHANNEL_COLORS: Record<ChannelId, string> = {
@@ -25,20 +106,27 @@ export const CHANNEL_COLORS: Record<ChannelId, string> = {
   'ttd': '#22C55E',
   'ctv': '#A855F7',
   'spotify': '#1DB954',
+  'linkedin': '#0A66C2',
+  'ooh': '#F97316',
 };
 
-export type CampaignObjective = 'awareness' | 'consideration' | 'performance';
-export type CampaignStatus = 'live' | 'paused';
+// ===== Campaigns =====
+export type CampaignObjective = 'awareness' | 'consideration' | 'conversion' | 'retention';
+export type CampaignStatus = 'live' | 'paused' | 'completed' | 'scheduled';
 
 export interface Campaign {
   id: string;
   name: string;
-  region: RegionId;
+  division: DivisionId;
+  agency: AgencyId;
+  productLine: ProductLineId;
+  audiences: AudienceId[];
   objective: CampaignObjective;
   status: CampaignStatus;
   channels: ChannelId[];
-  countries: string[]; // US FIPS state codes
+  geos: GeoId[];
   startDate: string;
+  endDate?: string;
   plannedBudget: number;
 }
 
@@ -136,13 +224,14 @@ export const DEFAULT_BRAND_KPIS: KPIKey[] = [
 ];
 
 // ===== Funnel Stage =====
-export type FunnelStage = 'all' | 'upper' | 'mid' | 'lower';
+export type FunnelStage = 'all' | 'upper' | 'mid' | 'lower' | 'retention';
 
 export const FUNNEL_LABELS: Record<FunnelStage, string> = {
   all: 'All Funnel',
   upper: 'Upper Funnel',
   mid: 'Mid Funnel',
   lower: 'Lower Funnel',
+  retention: 'Retention',
 };
 
 export const FUNNEL_HERO_KPIS: Record<FunnelStage, KPIKey[]> = {
@@ -150,6 +239,7 @@ export const FUNNEL_HERO_KPIS: Record<FunnelStage, KPIKey[]> = {
   upper: ['impressions', 'reach', 'cpm'],
   mid: ['clicks', 'ctr', 'engagementRate'],
   lower: ['conversions', 'cpa', 'roas'],
+  retention: ['conversions', 'roas', 'cpl'],
 };
 
 export const FUNNEL_CUSTOM_KPIS: Record<FunnelStage, KPIKey[]> = {
@@ -157,6 +247,7 @@ export const FUNNEL_CUSTOM_KPIS: Record<FunnelStage, KPIKey[]> = {
   upper: ['spend', 'impressions', 'reach', 'frequency', 'cpm', 'videoViews3s', 'videoViewsThruplay', 'threeSecondViewRate', 'brandSearchLift', 'budgetPacing'],
   mid: ['spend', 'clicks', 'ctr', 'cpc', 'landingPageViews', 'lpvRate', 'engagements', 'engagementRate', 'videoViewsThruplay', 'videoCompletionRate', 'budgetPacing'],
   lower: ['spend', 'conversions', 'cpa', 'revenue', 'roas', 'leads', 'cpl', 'assistedConversions', 'budgetPacing'],
+  retention: ['spend', 'conversions', 'cpa', 'revenue', 'roas', 'leads', 'cpl', 'assistedConversions', 'budgetPacing'],
 };
 
 export const DEFAULT_EXEC_KPIS: KPIKey[] = [
@@ -180,10 +271,20 @@ export type AttributionModel = 'last-click' | 'first-click' | 'linear' | 'data-d
 export type UserRole = 'agency' | 'exec';
 
 // ===== View Level =====
-export type ViewLevel = 'brand' | 'region' | 'campaign';
+export type ViewLevel = 'brand' | 'division' | 'product' | 'campaign';
 
 // ===== News =====
-export type NewsTag = 'brand' | 'qsr' | 'menu' | 'delivery' | 'social' | 'sports' | 'sponsorships' | 'competitors' | 'macro';
+export type NewsTag =
+  | 'brand'
+  | 'banking'
+  | 'credit-cards'
+  | 'fintech'
+  | 'social'
+  | 'sports'
+  | 'sponsorships'
+  | 'competitors'
+  | 'macro';
+
 export type NewsUrgency = 'low' | 'medium' | 'high';
 
 export interface NewsItem {
@@ -202,7 +303,7 @@ export interface NewsItem {
 // ===== Insights =====
 export type InsightCategory = 'performance' | 'creative' | 'competitive' | 'platform' | 'macro';
 export type InsightStatus = 'new' | 'reviewed' | 'approved' | 'dismissed' | 'snoozed';
-export type InsightScope = 'brand' | 'region' | 'campaign';
+export type InsightScope = 'brand' | 'division' | 'product' | 'campaign';
 
 export type DismissReason = 'not-relevant' | 'insufficient-confidence' | 'brand-constraint' | 'other';
 
@@ -218,7 +319,8 @@ export interface Insight {
   id: string;
   createdAt: string;
   scope: InsightScope;
-  region?: RegionId;
+  division?: DivisionId;
+  productLine?: ProductLineId;
   campaign?: string;
   channels: ChannelId[];
   category: InsightCategory;
@@ -232,7 +334,6 @@ export interface Insight {
   linkedNewsId?: string;
   linkedAnomalyId?: string;
   actionSteps: InsightActionStep[];
-  // Workflow
   approvalRationale?: string;
   dismissReason?: DismissReason;
   snoozeUntil?: string;
@@ -254,7 +355,9 @@ export interface ActionLogEntry {
 export interface Anomaly {
   id: string;
   date: string;
-  region: RegionId;
+  geo: GeoId;
+  division?: DivisionId;
+  productLine?: ProductLineId;
   campaign?: string;
   channel?: ChannelId;
   metric: KPIKey;
@@ -267,13 +370,18 @@ export interface Anomaly {
 export interface DashboardFilters {
   dateRange: DateRange;
   compareEnabled: boolean;
-  regions: RegionId[];
+  divisions: DivisionId[];
+  agencies: AgencyId[];
+  productLines: ProductLineId[];
+  audiences: AudienceId[];
+  geos: GeoId[];
   channels: ChannelId[];
   objectives: CampaignObjective[];
   campaignStatus: CampaignStatus[];
   attributionModel: AttributionModel;
   role: UserRole;
-  selectedRegion?: RegionId;
+  selectedDivision?: DivisionId;
+  selectedProductLine?: ProductLineId;
   selectedCampaign?: string;
   customKpis?: KPIKey[];
 }

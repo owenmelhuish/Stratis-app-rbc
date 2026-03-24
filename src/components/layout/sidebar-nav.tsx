@@ -98,21 +98,21 @@ export function SidebarNav() {
               <BarChart3 className="h-3.5 w-3.5 text-muted-foreground/50" />
               <span className="text-[12px] text-muted-foreground">Campaigns</span>
             </div>
-            <span className="text-[13px] font-bold text-foreground">24</span>
+            <span className="text-[13px] font-bold text-foreground">19</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground/50" />
               <span className="text-[12px] text-muted-foreground">Total Spend</span>
             </div>
-            <span className="text-[13px] font-bold text-foreground">$2.4M</span>
+            <span className="text-[13px] font-bold text-foreground">$38.4M</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-3.5 w-3.5 text-teal" />
               <span className="text-[12px] text-muted-foreground">Avg ROAS</span>
             </div>
-            <span className="text-[13px] font-bold text-teal">3.2x</span>
+            <span className="text-[13px] font-bold text-teal">2.8x</span>
           </div>
         </div>
       </div>

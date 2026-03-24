@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PieChart as PieChartIcon, Table2 } from "lucide-react";
 import type { Campaign, AggregatedKPIs } from "@/types";
-import { REGION_LABELS } from "@/types";
+import { DIVISION_LABELS } from "@/types";
 import { formatCurrency, formatKPIValue } from "@/lib/format";
 
 interface CampaignOverviewChartProps {
@@ -159,7 +159,7 @@ export function CampaignOverviewChart({ campaignData }: CampaignOverviewChartPro
                           {d.campaign.name}
                         </span>
                         <span className="text-[9px] text-muted-foreground shrink-0">
-                          {REGION_LABELS[d.campaign.region]}
+                          {DIVISION_LABELS[d.campaign.division]}
                         </span>
                       </div>
                     </td>
@@ -188,7 +188,7 @@ export function CampaignOverviewChart({ campaignData }: CampaignOverviewChartPro
             <thead>
               <tr className="text-muted-foreground text-[10px] uppercase tracking-wider border-b border-border/30">
                 <th className="text-left pb-2 font-medium">Campaign</th>
-                <th className="text-left pb-2 font-medium">Region</th>
+                <th className="text-left pb-2 font-medium">Division</th>
                 <th className="text-right pb-2 font-medium">Spend</th>
                 <th className="text-right pb-2 font-medium">% of Total</th>
                 <th className="text-right pb-2 font-medium">ROAS</th>
@@ -216,7 +216,7 @@ export function CampaignOverviewChart({ campaignData }: CampaignOverviewChartPro
                     </div>
                   </td>
                   <td className="py-2.5 text-muted-foreground">
-                    {REGION_LABELS[d.campaign.region]}
+                    {DIVISION_LABELS[d.campaign.division]}
                   </td>
                   <td className="text-right py-2.5 tabular-nums">
                     {formatCurrency(d.kpis.spend)}

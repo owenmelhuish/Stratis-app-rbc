@@ -1,12 +1,13 @@
-import { subDays, format, differenceInDays } from 'date-fns';
+import { subDays, format } from 'date-fns';
 import type {
-  RegionId, ChannelId, Campaign, CampaignObjective, CampaignStatus,
+  ChannelId, Campaign, CampaignObjective, CampaignStatus,
   DailyMetrics, AggregatedKPIs, KPIDelta, KPIKey,
   NewsItem, NewsTag, NewsUrgency,
-  Insight, InsightCategory, InsightScope, InsightStatus, InsightActionStep,
+  Insight, InsightCategory, InsightStatus, InsightActionStep,
   Anomaly,
+  DivisionId, AgencyId, ProductLineId, AudienceId, GeoId,
 } from '@/types';
-import { REGION_LABELS, CHANNEL_LABELS } from '@/types';
+import { CHANNEL_LABELS, GEO_LABELS } from '@/types';
 
 // ===== Seedable PRNG (Mulberry32) =====
 function mulberry32(seed: number) {
@@ -49,8 +50,8 @@ function gaussian(): number {
 const END_DATE = new Date('2026-02-11');
 const DATA_DAYS = 180;
 const START_DATE = subDays(END_DATE, DATA_DAYS - 1);
-const ALL_REGIONS: RegionId[] = ['north-america'];
-const ALL_CHANNELS: ChannelId[] = ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify'];
+const ALL_GEOS: GeoId[] = ['national', 'ontario', 'quebec', 'western', 'atlantic'];
+const ALL_CHANNELS: ChannelId[] = ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify', 'linkedin', 'ooh'];
 
 // ===== Channel Profiles =====
 interface ChannelProfile {
@@ -66,87 +67,104 @@ interface ChannelProfile {
 }
 
 const CHANNEL_PROFILES: Record<ChannelId, ChannelProfile> = {
-  'google-search': { baseSpend: 2085, cpmRange: [15, 30], ctrRange: [4, 8], cvrRange: [6, 10], cpcRange: [2, 5], videoViewRate: 0, videoCompletionRate: 0, engagementMultiplier: 0.5, volatility: 0.15 },
-  'facebook': { baseSpend: 1730, cpmRange: [8, 18], ctrRange: [1.2, 2.5], cvrRange: [2.5, 5], cpcRange: [0.8, 2.5], videoViewRate: 0.3, videoCompletionRate: 0.25, engagementMultiplier: 1.2, volatility: 0.12 },
-  'instagram': { baseSpend: 1535, cpmRange: [8, 20], ctrRange: [1, 2.2], cvrRange: [2.5, 4.5], cpcRange: [1, 3], videoViewRate: 0.4, videoCompletionRate: 0.3, engagementMultiplier: 1.5, volatility: 0.1 },
-  'tiktok': { baseSpend: 1185, cpmRange: [5, 15], ctrRange: [0.8, 2], cvrRange: [1.5, 3.5], cpcRange: [0.5, 2], videoViewRate: 0.8, videoCompletionRate: 0.15, engagementMultiplier: 2.0, volatility: 0.25 },
-  'ttd': { baseSpend: 2570, cpmRange: [5, 15], ctrRange: [0.3, 1], cvrRange: [1, 2.5], cpcRange: [1, 4], videoViewRate: 0.2, videoCompletionRate: 0.2, engagementMultiplier: 0.3, volatility: 0.08 },
-  'ctv': { baseSpend: 3200, cpmRange: [20, 40], ctrRange: [0.2, 0.6], cvrRange: [0.8, 2.0], cpcRange: [3, 8], videoViewRate: 0.9, videoCompletionRate: 0.7, engagementMultiplier: 0.2, volatility: 0.06 },
-  'spotify': { baseSpend: 1400, cpmRange: [10, 25], ctrRange: [0.5, 1.5], cvrRange: [1.2, 3.0], cpcRange: [1.5, 4], videoViewRate: 0.0, videoCompletionRate: 0.0, engagementMultiplier: 0.4, volatility: 0.10 },
+  'google-search': { baseSpend: 2085, cpmRange: [18, 38], ctrRange: [3, 7], cvrRange: [4, 8], cpcRange: [3, 7], videoViewRate: 0, videoCompletionRate: 0, engagementMultiplier: 0.5, volatility: 0.15 },
+  'facebook': { baseSpend: 1730, cpmRange: [10, 22], ctrRange: [0.9, 2.0], cvrRange: [1.8, 4.0], cpcRange: [1.2, 3.5], videoViewRate: 0.3, videoCompletionRate: 0.25, engagementMultiplier: 1.2, volatility: 0.12 },
+  'instagram': { baseSpend: 1535, cpmRange: [10, 24], ctrRange: [0.8, 1.8], cvrRange: [1.8, 3.5], cpcRange: [1.5, 4], videoViewRate: 0.4, videoCompletionRate: 0.3, engagementMultiplier: 1.5, volatility: 0.1 },
+  'tiktok': { baseSpend: 1185, cpmRange: [6, 18], ctrRange: [0.6, 1.6], cvrRange: [1.0, 2.8], cpcRange: [0.8, 2.5], videoViewRate: 0.8, videoCompletionRate: 0.15, engagementMultiplier: 2.0, volatility: 0.25 },
+  'ttd': { baseSpend: 2570, cpmRange: [6, 18], ctrRange: [0.2, 0.8], cvrRange: [0.8, 2.0], cpcRange: [1.5, 5], videoViewRate: 0.2, videoCompletionRate: 0.2, engagementMultiplier: 0.3, volatility: 0.08 },
+  'ctv': { baseSpend: 3200, cpmRange: [22, 45], ctrRange: [0.15, 0.5], cvrRange: [0.5, 1.5], cpcRange: [4, 10], videoViewRate: 0.9, videoCompletionRate: 0.7, engagementMultiplier: 0.2, volatility: 0.06 },
+  'spotify': { baseSpend: 1400, cpmRange: [12, 28], ctrRange: [0.4, 1.2], cvrRange: [0.8, 2.5], cpcRange: [2, 5], videoViewRate: 0.0, videoCompletionRate: 0.0, engagementMultiplier: 0.4, volatility: 0.10 },
+  'linkedin': { baseSpend: 1800, cpmRange: [15, 35], ctrRange: [0.5, 1.5], cvrRange: [1.5, 3.5], cpcRange: [3, 8], videoViewRate: 0.15, videoCompletionRate: 0.2, engagementMultiplier: 0.6, volatility: 0.10 },
+  'ooh': { baseSpend: 2200, cpmRange: [8, 20], ctrRange: [0.1, 0.3], cvrRange: [0.3, 1.0], cpcRange: [5, 15], videoViewRate: 0, videoCompletionRate: 0, engagementMultiplier: 0.1, volatility: 0.05 },
 };
 
-// ===== Region multipliers =====
-const REGION_MULTIPLIERS: Record<RegionId, number> = {
-  'north-america': 1.4,
+// ===== Geo multipliers =====
+const GEO_MULTIPLIERS: Record<GeoId, number> = {
+  'national': 1.4,
+  'ontario': 1.3,
+  'quebec': 1.1,
+  'western': 1.2,
+  'atlantic': 0.9,
+};
+
+// ===== Province Branch Weight Distribution =====
+const PROVINCE_BRANCH_WEIGHT: Record<string, number> = {
+  'ON': 0.380, 'QC': 0.230, 'BC': 0.140, 'AB': 0.110,
+  'MB': 0.035, 'SK': 0.025, 'NS': 0.025, 'NB': 0.020,
+  'NL': 0.015, 'PE': 0.008, 'NT': 0.005, 'YT': 0.004, 'NU': 0.003,
+};
+
+// ===== Geo to Province mapping =====
+const GEO_TO_PROVINCES: Record<GeoId, string[]> = {
+  'national': ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE', 'NT', 'YT', 'NU'],
+  'ontario': ['ON'],
+  'quebec': ['QC'],
+  'western': ['BC', 'AB', 'MB', 'SK'],
+  'atlantic': ['NS', 'NB', 'NL', 'PE'],
 };
 
 // ===== Campaign definitions =====
 interface CampaignDef {
-  id: string; name: string; region: RegionId; objective: CampaignObjective;
-  status: CampaignStatus; channels: ChannelId[]; budgetMultiplier: number;
-  countries: string[]; plannedBudget: number;
+  id: string; name: string; division: DivisionId; agency: AgencyId;
+  productLine: ProductLineId; audiences: AudienceId[];
+  objective: CampaignObjective; status: CampaignStatus;
+  channels: ChannelId[]; geos: GeoId[]; budgetMultiplier: number;
+  plannedBudget: number;
 }
 
 const CAMPAIGN_DEFS: CampaignDef[] = [
-  // ── Loyalty Campaigns ──
-  // Loyalty App Acquisition — drive new app downloads and Pizza Pizza Club sign-ups
-  { id: 'pp-loyalty-app', name: 'Loyalty App Acquisition', region: 'north-america', objective: 'performance', status: 'live',
-    channels: ['google-search', 'facebook', 'instagram', 'ttd', 'spotify'], budgetMultiplier: 1.0136, plannedBudget: 1600000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB'] },
-  // Loyalty Retention & Upsell — re-engage existing Pizza Pizza Club members, drive repeat orders and higher AOV
-  { id: 'pp-loyalty-retain', name: 'Loyalty Retention & Upsell', region: 'north-america', objective: 'performance', status: 'live',
-    channels: ['facebook', 'instagram', 'google-search'], budgetMultiplier: 0.8450, plannedBudget: 980000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL'] },
-
-  // ── Persona-Based Campaigns ──
-  // TikTok Foodies — social-first food discovery audience, 18-34, trending food content
-  { id: 'pp-tiktok-foodies', name: 'TikTok Foodies', region: 'north-america', objective: 'awareness', status: 'live',
-    channels: ['tiktok', 'instagram', 'spotify'], budgetMultiplier: 1.2200, plannedBudget: 1100000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'NS'] },
-  // Family Meal Deals — families seeking value meal bundles, seasonal promotions
-  { id: 'pp-family-deals', name: 'Family Meal Deals', region: 'north-america', objective: 'performance', status: 'live',
-    channels: ['google-search', 'facebook', 'instagram', 'ttd', 'ctv'], budgetMultiplier: 1.4800, plannedBudget: 2200000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE', 'YT'] },
-  // Late Night Cravings — 18-35, late-night ordering, delivery-first
-  { id: 'pp-late-night', name: 'Late Night Cravings', region: 'north-america', objective: 'consideration', status: 'live',
-    channels: ['facebook', 'instagram', 'google-search'], budgetMultiplier: 1.1050, plannedBudget: 1050000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB'] },
-  // Plant-Based & Better-For-You — health-conscious consumers, plant-based menu items
-  { id: 'pp-plant-based', name: 'Plant-Based & Better-For-You', region: 'north-america', objective: 'consideration', status: 'live',
-    channels: ['instagram', 'tiktok', 'facebook', 'ctv'], budgetMultiplier: 1.1500, plannedBudget: 980000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'NS'] },
-
-  // ── Core QSR Campaigns ──
-  // Game Day & Sports Moments — peak seasonal push around sports events across all provinces
-  { id: 'pp-game-day', name: 'Game Day & Sports Moments', region: 'north-america', objective: 'performance', status: 'live',
-    channels: ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify'], budgetMultiplier: 1.6116, plannedBudget: 3720000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE', 'YT'] },
-  // New Menu Launch — new menu items and LTOs
-  { id: 'pp-new-menu', name: 'New Menu Launch', region: 'north-america', objective: 'awareness', status: 'live',
-    channels: ['instagram', 'facebook', 'ttd', 'ctv', 'spotify'], budgetMultiplier: 0.6286, plannedBudget: 1400000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE'] },
-  // Catering & Group Orders — office catering, party platters, group ordering
-  { id: 'pp-catering', name: 'Catering & Group Orders', region: 'north-america', objective: 'consideration', status: 'live',
-    channels: ['instagram', 'tiktok', 'facebook'], budgetMultiplier: 1.349, plannedBudget: 1400000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'NS'] },
-  // Digital Ordering Retargeting — PizzaPizza.ca and app conversion
-  { id: 'pp-digital-orders', name: 'Digital Ordering Retargeting', region: 'north-america', objective: 'performance', status: 'live',
-    channels: ['google-search', 'ttd', 'facebook'], budgetMultiplier: 0.5231, plannedBudget: 930000,
-    countries: ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE'] },
+  { id: 'rbc-avion-travel-q1', name: 'Avion Travel Rewards — Q1 Push', division: 'pcb', agency: 'omnicom', productLine: 'avion', audiences: ['young-professionals', 'families', 'high-net-worth'], objective: 'awareness', status: 'live',
+    channels: ['instagram', 'facebook', 'google-search', 'ctv', 'ttd', 'ooh', 'spotify'], geos: ['national'], budgetMultiplier: 1.50, plannedBudget: 3200000 },
+  { id: 'rbc-avion-points-accel', name: 'Avion Points Accelerator', division: 'pcb', agency: 'omnicom', productLine: 'avion', audiences: ['young-professionals', 'families', 'mass-market'], objective: 'conversion', status: 'live',
+    channels: ['instagram', 'facebook', 'google-search'], geos: ['national'], budgetMultiplier: 1.10, plannedBudget: 1800000 },
+  { id: 'rbc-avion-retention', name: 'Avion Cardholder Retention', division: 'pcb', agency: 'omnicom', productLine: 'avion', audiences: ['young-professionals', 'families', 'high-net-worth'], objective: 'retention', status: 'live',
+    channels: ['instagram', 'facebook', 'google-search'], geos: ['national'], budgetMultiplier: 0.85, plannedBudget: 1200000 },
+  { id: 'rbc-ion-launch', name: 'ION Card Digital Launch', division: 'pcb', agency: 'omnicom', productLine: 'ion', audiences: ['young-professionals', 'students'], objective: 'awareness', status: 'live',
+    channels: ['tiktok', 'instagram', 'facebook', 'spotify', 'google-search'], geos: ['national'], budgetMultiplier: 1.35, plannedBudget: 2400000 },
+  { id: 'rbc-ion-student', name: 'ION Student Crossover', division: 'pcb', agency: 'omnicom', productLine: 'ion', audiences: ['students'], objective: 'consideration', status: 'live',
+    channels: ['tiktok', 'instagram', 'facebook', 'spotify'], geos: ['ontario', 'quebec'], budgetMultiplier: 0.70, plannedBudget: 900000 },
+  { id: 'rbc-rewards-awareness', name: 'RBC Rewards Brand Awareness', division: 'pcb', agency: 'in-house', productLine: 'rewards', audiences: ['mass-market', 'young-professionals', 'families'], objective: 'awareness', status: 'live',
+    channels: ['instagram', 'facebook', 'ctv', 'spotify'], geos: ['national'], budgetMultiplier: 1.00, plannedBudget: 1600000 },
+  { id: 'rbc-mortgage-spring', name: 'Spring Mortgage Rates', division: 'pcb', agency: 'omnicom', productLine: 'mortgage', audiences: ['families', 'young-professionals'], objective: 'conversion', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'ctv', 'ttd'], geos: ['national'], budgetMultiplier: 1.40, plannedBudget: 2800000 },
+  { id: 'rbc-mortgage-ftb', name: 'First-Time Home Buyer', division: 'pcb', agency: 'omnicom', productLine: 'mortgage', audiences: ['young-professionals'], objective: 'consideration', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'linkedin'], geos: ['ontario', 'western'], budgetMultiplier: 1.05, plannedBudget: 1500000 },
+  { id: 'rbc-di-tfsa', name: 'TFSA Season Push', division: 'wealth', agency: 'publicis', productLine: 'direct-investing', audiences: ['young-professionals', 'high-net-worth', 'retirees'], objective: 'conversion', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'linkedin'], geos: ['national'], budgetMultiplier: 1.20, plannedBudget: 2000000 },
+  { id: 'rbc-di-active-trader', name: 'Active Trader Acquisition', division: 'wealth', agency: 'publicis', productLine: 'direct-investing', audiences: ['young-professionals', 'high-net-worth'], objective: 'consideration', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'tiktok'], geos: ['national'], budgetMultiplier: 0.90, plannedBudget: 1100000 },
+  { id: 'rbc-ds-hnw', name: 'HNW Wealth Advisory', division: 'wealth', agency: 'publicis', productLine: 'dominion-securities', audiences: ['high-net-worth', 'retirees'], objective: 'consideration', status: 'live',
+    channels: ['linkedin', 'ctv', 'ooh'], geos: ['ontario', 'western'], budgetMultiplier: 1.15, plannedBudget: 1800000 },
+  { id: 'rbc-insurance-bundle', name: 'Home & Auto Insurance Bundle', division: 'insurance', agency: 'publicis', productLine: 'insurance-products', audiences: ['families', 'mass-market'], objective: 'conversion', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'ctv'], geos: ['national'], budgetMultiplier: 1.25, plannedBudget: 2100000 },
+  { id: 'rbc-student-bts', name: 'Back to School Banking 2026', division: 'pcb', agency: 'omnicom', productLine: 'student', audiences: ['students'], objective: 'awareness', status: 'live',
+    channels: ['tiktok', 'instagram', 'facebook', 'spotify'], geos: ['ontario', 'quebec'], budgetMultiplier: 0.65, plannedBudget: 800000 },
+  { id: 'rbc-newcomer-welcome', name: 'Welcome to Canada', division: 'pcb', agency: 'wpp', productLine: 'newcomer', audiences: ['new-canadians'], objective: 'awareness', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook', 'linkedin'], geos: ['national'], budgetMultiplier: 1.00, plannedBudget: 1400000 },
+  { id: 'rbc-smb-growth', name: 'Small Business Growth', division: 'pcb', agency: 'wpp', productLine: 'small-business', audiences: ['business-owners'], objective: 'consideration', status: 'live',
+    channels: ['google-search', 'linkedin', 'instagram', 'facebook'], geos: ['national'], budgetMultiplier: 1.10, plannedBudget: 1600000 },
+  { id: 'rbc-cml-commercial', name: 'Commercial Lending', division: 'capital-markets', agency: 'wpp', productLine: 'commercial-lending', audiences: ['business-owners'], objective: 'consideration', status: 'live',
+    channels: ['linkedin', 'google-search'], geos: ['national'], budgetMultiplier: 0.75, plannedBudget: 900000 },
+  { id: 'rbc-gic-rates', name: 'GIC Rate Promotion', division: 'pcb', agency: 'in-house', productLine: 'gic-savings', audiences: ['retirees', 'mass-market'], objective: 'conversion', status: 'live',
+    channels: ['google-search', 'instagram', 'facebook'], geos: ['national'], budgetMultiplier: 0.80, plannedBudget: 1000000 },
+  { id: 'rbc-gameday-moments', name: 'Game Day Moments', division: 'pcb', agency: 'in-house', productLine: 'rewards', audiences: ['young-professionals', 'families', 'mass-market'], objective: 'awareness', status: 'live',
+    channels: ['instagram', 'facebook', 'ctv', 'tiktok', 'ooh', 'spotify'], geos: ['national'], budgetMultiplier: 1.60, plannedBudget: 3500000 },
+  { id: 'rbc-brand-q1', name: 'RBC Master Brand — Q1', division: 'pcb', agency: 'in-house', productLine: 'rewards', audiences: ['mass-market', 'young-professionals', 'families'], objective: 'awareness', status: 'live',
+    channels: ['instagram', 'facebook', 'ctv', 'google-search', 'ooh', 'spotify'], geos: ['national'], budgetMultiplier: 1.75, plannedBudget: 4000000 },
 ];
 
 // ===== Events (anomaly generators) =====
 interface DataEvent {
   name: string; dayOffset: number; duration: number;
-  regions: RegionId[]; spendMult: number; cvrMult: number; engageMult: number;
+  geos: GeoId[]; spendMult: number; cvrMult: number; engageMult: number;
 }
 
 const DATA_EVENTS: DataEvent[] = [
-  { name: 'Super Bowl Campaign Push', dayOffset: 45, duration: 7, regions: ['north-america'], spendMult: 1.8, cvrMult: 1.3, engageMult: 2.0 },
-  { name: 'UberEats/DoorDash Promo War', dayOffset: 90, duration: 10, regions: ['north-america'], spendMult: 1.0, cvrMult: 0.8, engageMult: 0.7 },
-  { name: 'NHL Playoffs Surge', dayOffset: 70, duration: 14, regions: ALL_REGIONS, spendMult: 1.3, cvrMult: 1.15, engageMult: 1.4 },
-  { name: 'TikTok Algorithm Shift', dayOffset: 100, duration: 5, regions: ALL_REGIONS, spendMult: 1.0, cvrMult: 0.75, engageMult: 1.6 },
-  { name: 'Holiday Catering Season', dayOffset: 150, duration: 10, regions: ['north-america'], spendMult: 1.5, cvrMult: 1.1, engageMult: 1.1 },
+  { name: 'RRSP/TFSA Deadline Push', dayOffset: 30, duration: 14, geos: ['national'], spendMult: 1.6, cvrMult: 1.4, engageMult: 1.2 },
+  { name: 'Bank of Canada Rate Decision', dayOffset: 60, duration: 5, geos: ['national'], spendMult: 1.3, cvrMult: 1.2, engageMult: 1.1 },
+  { name: 'Spring Housing Market Surge', dayOffset: 90, duration: 21, geos: ['national'], spendMult: 1.5, cvrMult: 1.3, engageMult: 1.0 },
+  { name: 'Wealthsimple Aggressive Campaign', dayOffset: 110, duration: 10, geos: ['national'], spendMult: 1.0, cvrMult: 0.85, engageMult: 0.8 },
+  { name: 'Back to School Banking Season', dayOffset: 150, duration: 14, geos: ['national'], spendMult: 1.4, cvrMult: 1.15, engageMult: 1.3 },
 ];
 
 // ===== Data Generation =====
@@ -155,7 +173,8 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
 
   for (const campaign of CAMPAIGN_DEFS) {
     data[campaign.id] = {};
-    const regionMult = REGION_MULTIPLIERS[campaign.region];
+    // Use the first geo's multiplier as the campaign multiplier
+    const geoMult = GEO_MULTIPLIERS[campaign.geos[0]] || 1.0;
 
     for (const channel of campaign.channels) {
       const profile = CHANNEL_PROFILES[channel];
@@ -170,7 +189,8 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
         // Check events
         let eventSpendMult = 1, eventCvrMult = 1, eventEngageMult = 1;
         for (const evt of DATA_EVENTS) {
-          if (d >= evt.dayOffset && d < evt.dayOffset + evt.duration && evt.regions.includes(campaign.region)) {
+          if (d >= evt.dayOffset && d < evt.dayOffset + evt.duration &&
+              evt.geos.some(g => campaign.geos.includes(g) || g === 'national')) {
             eventSpendMult *= evt.spendMult;
             eventCvrMult *= evt.cvrMult;
             eventEngageMult *= evt.engageMult;
@@ -178,7 +198,7 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
         }
 
         const noise = 1 + gaussian() * profile.volatility;
-        const spendBase = profile.baseSpend * campaign.budgetMultiplier * regionMult * weekendMult * seasonality * eventSpendMult * Math.max(0.3, noise);
+        const spendBase = profile.baseSpend * campaign.budgetMultiplier * geoMult * weekendMult * seasonality * eventSpendMult * Math.max(0.3, noise);
         const spend = Math.max(10, spendBase);
 
         const cpm = randBetween(profile.cpmRange[0], profile.cpmRange[1]) * (1 + gaussian() * 0.1);
@@ -195,7 +215,7 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
         const conversions = Math.max(0, Math.round(clicks * cvr));
         const leads = Math.round(conversions * randBetween(1.5, 3));
 
-        const avgOrderValue = randBetween(190, 440);
+        const avgOrderValue = randBetween(800, 3500);
         const revenue = conversions * avgOrderValue * randBetween(0.8, 1.2);
 
         const videoViews3s = Math.round(impressions * profile.videoViewRate * randBetween(0.8, 1.2));
@@ -333,7 +353,9 @@ function detectAnomalies(dailyData: Record<string, Record<string, DailyMetrics[]
             anomalies.push({
               id: `anom-${campaignDef.id}-${channel}-${metric}-${i}`,
               date: series[i].date,
-              region: campaignDef.region,
+              geo: campaignDef.geos[0],
+              division: campaignDef.division,
+              productLine: campaignDef.productLine,
               campaign: campaignDef.id,
               channel: channel,
               metric: metric as KPIKey,
@@ -353,15 +375,15 @@ function detectAnomalies(dailyData: Record<string, Record<string, DailyMetrics[]
 
 // ===== News Generation =====
 const NEWS_SOURCES_BY_TAG: Record<string, string[]> = {
-  brand: ['Retail Insider', 'Financial Post', 'Strategy Online', 'The Globe and Mail', 'Marketing Magazine', 'CBC News'],
-  qsr: ['QSR Magazine', 'Technomic', 'Foodservice & Hospitality', 'The Globe and Mail', 'Restaurants Canada'],
-  menu: ['Technomic', 'QSR Magazine', 'Food in Canada', 'Restaurants Canada', 'NPD Group'],
-  delivery: ['UberEats Data', 'DoorDash Insights', 'SkipTheDishes Analytics', 'Technomic', 'Second Measure'],
-  social: ['Reddit r/pizza', 'Reddit r/foodToronto', 'Reddit r/CanadianFood', 'TikTok #FoodTok', 'Reddit r/FastFood'],
-  sports: ['TSN', 'Sportsnet', 'Retail Insider', 'Strategy Online', 'Financial Post'],
-  sponsorships: ['TSN', 'Sportsnet', 'The Athletic', 'Daily Faceoff', 'CFL.ca', 'PWHL News'],
-  competitors: ['Retail Insider', 'Financial Post', 'QSR Magazine', 'RedFlagDeals', 'Strategy Online', 'Technomic'],
-  macro: ['Statistics Canada', 'The Globe and Mail', 'Financial Post', 'Deloitte Canada', 'CBC News'],
+  brand: ['Financial Post', 'The Globe and Mail', 'Bloomberg', 'Reuters', 'Strategy Online', 'BNN Bloomberg'],
+  banking: ['OSFI Bulletin', 'Financial Post', 'The Globe and Mail', 'Canadian Banker', 'Reuters'],
+  'credit-cards': ['Financial Post', 'Ratehub.ca', 'MoneySense', 'The Globe and Mail', 'Strategy Online'],
+  fintech: ['BetaKit', 'TechCrunch', 'Financial Post', 'The Logic', 'Wealthsimple Blog'],
+  social: ['Reddit r/PersonalFinanceCanada', 'Reddit r/CanadianInvestor', 'TikTok #FinTok', 'Reddit r/churningcanada', 'X/Twitter Finance'],
+  sports: ['TSN', 'Sportsnet', 'Golf Digest', 'Strategy Online', 'Financial Post'],
+  sponsorships: ['TSN', 'Golf Digest', 'The Athletic', 'Strategy Online', 'PGA Tour'],
+  competitors: ['Financial Post', 'The Globe and Mail', 'Ratehub.ca', 'MoneySense', 'RedFlagDeals'],
+  macro: ['Statistics Canada', 'Bank of Canada', 'The Globe and Mail', 'Financial Post', 'Deloitte Canada'],
 };
 
 function generateNews(): NewsItem[] {
@@ -370,113 +392,203 @@ function generateNews(): NewsItem[] {
     titleTemplate: (c?: string) => string; tags: NewsTag[]; urgency: NewsUrgency;
     summary: string; whyItMatters: string; competitor?: string;
   }> = [
-    // ── 1. Brand & Corporate Narrative (3 pinned) ──
-    { titleTemplate: () => 'Pizza Pizza Mentions Surge After CEO Interview on Canadian QSR Expansion Strategy', tags: ['brand'], urgency: 'high', summary: 'Pizza Pizza CEO\'s interview on BNN Bloomberg discussing the 750+ location expansion strategy and digital ordering transformation generated significant media pickup and social conversation, with brand mentions up 280% in 48 hours. Coverage framed Pizza Pizza as a differentiated Canadian QSR leader rather than a legacy pizza chain.', whyItMatters: 'The narrative is shifting toward strategic relevance and growth positioning — this is the story Pizza Pizza wants the market to tell. Amplify before the news cycle moves on.' },
-    { titleTemplate: () => 'Pizza Pizza Club Loyalty Program Surpasses 2M Members — Digital Orders Drive Growth', tags: ['brand'], urgency: 'high', summary: 'Pizza Pizza\'s loyalty program has surpassed 2M active members. Media coverage highlights the 2.8x higher order frequency among members and the program\'s role in driving digital ordering adoption, with analysts noting it as a competitive advantage against aggregator platforms.', whyItMatters: 'The loyalty narrative is now working in Pizza Pizza\'s favour — membership is being framed as a digital moat against delivery aggregators. This supports direct-ordering positioning across all customer-facing communications.' },
-    { titleTemplate: () => 'Pizza Pizza ESG Report Highlights Sustainable Packaging and Local Sourcing — Mixed Reception', tags: ['brand'], urgency: 'medium', summary: 'Pizza Pizza\'s latest ESG report highlights compostable packaging rollout and Canadian-sourced ingredients initiatives. Reception is mixed: sustainability advocates praise the direction while critics question the pace relative to global QSR peers.', whyItMatters: 'ESG narrative requires careful management — positive signals exist but the story isn\'t fully landed. Monitor sentiment and consider proactive communication to control the framing.' },
+    // ── 1. Brand & Corporate (3 pinned) ──
+    { titleTemplate: () => 'RBC Q1 2026 Earnings Beat Expectations — Digital Banking Growth Highlighted as Key Driver', tags: ['brand'], urgency: 'high',
+      summary: 'RBC reported Q1 2026 earnings above analyst expectations, with digital banking transactions up 34% year-over-year. Media coverage frames RBC as Canada\'s digital banking leader, with the CEO citing mobile-first initiatives and the ION card launch as catalysts for younger customer acquisition.',
+      whyItMatters: 'Positive earnings narrative reinforces RBC\'s market leadership positioning. Media is connecting digital transformation to financial performance — amplify this story across paid channels before the news cycle moves on.' },
+    { titleTemplate: () => 'RBC Avion Named #1 Travel Rewards Card in Canada by MoneySense Annual Rankings', tags: ['brand'], urgency: 'high',
+      summary: 'MoneySense\'s annual credit card rankings have named RBC Avion as the #1 travel rewards card in Canada for the third consecutive year. The ranking cited superior lounge access, travel insurance coverage, and the Avion points ecosystem. Brand recall for Avion surged 18% in the week following publication.',
+      whyItMatters: 'Third-party validation from a trusted source is the highest-value brand signal. This ranking should be amplified across all Avion campaigns immediately — it provides credibility that paid messaging alone cannot achieve.' },
+    { titleTemplate: () => 'RBC ESG/Climate Commitments Draw Mixed Reception — Sustainability Report Under Scrutiny', tags: ['brand'], urgency: 'medium',
+      summary: 'RBC\'s latest sustainability report highlights $500B in sustainable financing commitments and net-zero targets. Reception is mixed: sustainability advocates praise the direction while environmental groups question fossil fuel lending exposure. Social media discussion is polarized but engagement is high.',
+      whyItMatters: 'ESG narrative requires careful management — positive signals exist but the story isn\'t fully landed. Monitor sentiment closely and consider proactive communication to control the framing before critics dominate the conversation.' },
 
-    // ── 2. QSR Industry & Market Trends (3 pinned) ──
-    { titleTemplate: () => 'Canadian QSR Revenue Hits $38B — Digital Ordering and Delivery Drive Growth', tags: ['qsr'], urgency: 'high', summary: 'Restaurants Canada reports the QSR sector revenue rose to $38B in 2024, with continued growth from digital ordering platforms and delivery services. In-store traffic remains strong but mobile ordering and third-party delivery adoption is accelerating, particularly among 18-34 consumers.', whyItMatters: 'The Canadian QSR market is growing and diversifying. Pizza Pizza must track where the growth is coming from — digital vs. in-store, delivery vs. pickup — to ensure menu strategy and marketing stay aligned with actual demand patterns.' },
-    { titleTemplate: () => 'Third-Party Delivery Commission Rates Rise to 30% — QSR Margins Under Pressure', tags: ['qsr'], urgency: 'medium', summary: 'Technomic reports third-party delivery platform commissions have risen to 25-30% on average, squeezing QSR margins. Chains with strong direct-ordering capabilities are outperforming those dependent on aggregators, with 4-8% higher margins on direct digital orders.', whyItMatters: 'Rising delivery commissions validate Pizza Pizza\'s investment in direct ordering through the app and website. The margin advantage of direct orders should be emphasized in all digital marketing and loyalty program communications.' },
-    { titleTemplate: () => 'Canadian QSR Chains Report Value Menu Resurgence — Price Sensitivity Drives Traffic', tags: ['qsr'], urgency: 'medium', summary: 'Multiple Canadian QSR chains report surging value menu sales driven by inflation-conscious consumers. Combo deals and family meal bundles are seeing 40-60% sales increases, with value positioning becoming a primary traffic driver.', whyItMatters: 'Value menu resurgence is predictable and actionable — Pizza Pizza should build promotional playbooks around value-forward messaging and family bundle offers to capture demand before competitors respond.' },
+    // ── 2. Banking Industry (3 pinned) ──
+    { titleTemplate: () => 'OSFI Finalizes Open Banking Framework — Big Five Banks Given 18-Month Implementation Timeline', tags: ['banking'], urgency: 'high',
+      summary: 'OSFI has finalized Canada\'s open banking framework, giving the Big Five banks 18 months to implement consumer data portability standards. The framework requires standardized APIs for account data sharing, transaction history, and product switching. Industry analysts expect this to accelerate fintech partnerships and competitive dynamics.',
+      whyItMatters: 'Open banking will reshape how Canadians choose financial products. RBC must position its digital experience as the reason customers stay — marketing should emphasize the strength of RBC\'s integrated ecosystem before competitors frame data portability as a reason to switch.' },
+    { titleTemplate: () => 'Bank of Canada Signals Potential Rate Cut — Mortgage and Lending Markets Respond', tags: ['banking'], urgency: 'high',
+      summary: 'Bank of Canada Governor Tiff Macklem signalled a potential rate cut in upcoming decisions, citing slowing inflation and housing market concerns. Mortgage pre-approval applications surged 22% within 48 hours. Fixed-rate mortgage pricing is already adjusting downward across the Big Five.',
+      whyItMatters: 'Rate cut signals drive immediate consumer action in mortgage and lending. RBC\'s mortgage campaigns should accelerate spend while consumer intent is elevated — the window for capturing rate-sensitive demand is narrow.' },
+    { titleTemplate: () => 'Canadian Banking Digital Adoption Reaches 78% — Mobile-First Banks Growing 3x Faster', tags: ['banking'], urgency: 'medium',
+      summary: 'Canadian Bankers Association data shows digital banking adoption has reached 78% of Canadian adults, with mobile-first interactions now exceeding branch visits by 5:1. Banks with strong mobile app experiences are acquiring customers 3x faster than those relying on branch networks.',
+      whyItMatters: 'Digital adoption acceleration validates RBC\'s mobile-first investment thesis. Marketing should emphasize app experience quality and digital-exclusive features to capture the growing cohort of Canadians who will never visit a branch.' },
 
-    // ── 3. Menu Innovation & Food Trends (3 pinned) ──
-    { titleTemplate: () => 'Plant-Based Pizza Demand Surges — Technomic Flags Category as Fastest-Growing QSR Segment', tags: ['menu'], urgency: 'high', summary: 'Technomic\'s latest menu trends report shows plant-based pizza options as the fastest-growing QSR menu category in Canada, with unit sales up 34% year-over-year. The surge is driven by flexitarian consumers, TikTok food content, and crossover appeal from health-conscious demographics.', whyItMatters: 'Plant-based is accelerating faster than most QSR chains have adjusted for. Pizza Pizza should evaluate menu positioning, app prominence, and marketing creative to capture this momentum while it\'s still building.' },
-    { titleTemplate: () => 'Loaded Crust and Premium Toppings Continue to Dominate — LTO Pre-Orders Break Records', tags: ['menu'], urgency: 'high', summary: 'Premium pizza innovations continue their dominance, with loaded crust and premium topping LTOs setting pre-order records across Canadian QSR. Specialty ingredients, global flavour profiles, and Instagram-worthy presentations are driving average ticket up 22%.', whyItMatters: 'Premium pizza innovation is not a trend — it\'s a category shift. Pizza Pizza should treat premium LTOs as a permanent menu strategy with dedicated marketing investment and social content.' },
-    { titleTemplate: () => 'r/pizza Buzzing Over New Detroit-Style Deep Dish — Thread Hits 4.2K Upvotes in 48 Hours', tags: ['menu'], urgency: 'high', summary: 'A thread on r/pizza about Detroit-style deep dish pizza has exploded, hitting 4.2K upvotes and 800+ comments in 48 hours. Users describe it as "the next big pizza trend" with comparisons to the Neapolitan wave. Multiple commenters are requesting Canadian chains add it to their menus.', whyItMatters: 'Reddit-driven food trend signals are early and high-conviction — when a thread hits this velocity, mainstream demand follows within weeks. Pizza Pizza should evaluate Detroit-style as a potential LTO and align social content to the conversation already happening.' },
+    // ── 3. Credit Cards (3 pinned) ──
+    { titleTemplate: () => 'Canadian Credit Card Rewards War Intensifies — Avion, Aeroplan, Scene+ Battle for Premium Cardholders', tags: ['credit-cards'], urgency: 'high',
+      summary: 'Competition for premium credit card customers in Canada has reached unprecedented levels. Avion, Aeroplan, and Scene+ are all increasing welcome bonuses, accelerating earn rates, and expanding lounge access. Customer acquisition costs for premium cards have risen 28% year-over-year as banks fight for high-value cardholders.',
+      whyItMatters: 'The rewards war is driving up acquisition costs but also increasing consumer awareness of card benefits. RBC\'s Avion campaigns must differentiate on experience quality and ecosystem breadth, not just points — competing on sign-up bonuses alone is unsustainable.' },
+    { titleTemplate: () => 'Buy Now Pay Later Regulation Coming to Canada — BNPL Providers Face New Oversight', tags: ['credit-cards'], urgency: 'medium',
+      summary: 'Federal regulators have announced plans to bring Buy Now Pay Later providers under consumer protection oversight, requiring disclosure standards, credit checks, and complaint handling processes. Traditional credit card issuers may benefit as BNPL loses its regulatory arbitrage advantage.',
+      whyItMatters: 'BNPL regulation levels the playing field for traditional credit cards. RBC can position credit cards as the safer, more transparent alternative — marketing should emphasize consumer protection and responsible lending as BNPL faces scrutiny.' },
+    { titleTemplate: () => 'Contactless Payment Adoption in Canada Hits 92% — Tap-to-Pay Now Default Consumer Behaviour', tags: ['credit-cards'], urgency: 'medium',
+      summary: 'Interac and Payments Canada report contactless payment adoption has reached 92% of Canadian card transactions. Tap-to-pay is now the default behaviour, with consumers actively avoiding merchants that require chip insertion or PIN entry. Mobile wallet integration is the next frontier.',
+      whyItMatters: 'Near-universal contactless adoption means payment convenience is no longer a differentiator — it\'s table stakes. RBC should shift card marketing emphasis from tap convenience to ecosystem benefits, rewards quality, and digital wallet integration.' },
 
-    // ── 4. Delivery Platform Intelligence (3 pinned) ──
-    { titleTemplate: () => 'UberEats Canada Data: Pizza Holds 3 of Top 5 Most-Ordered Categories for Third Consecutive Month', tags: ['delivery'], urgency: 'high', summary: 'UberEats Canada data shows pizza-related categories dominate the most-ordered list, with 3 of the top 5 spots held for a third consecutive month. Pepperoni pizza, pizza combos, and late-night pizza orders are driving volume. Order velocity on promotional items suggests sustained demand.', whyItMatters: 'Delivery platform data is a real-time demand signal. When pizza holds this concentration for three consecutive months, it confirms category-level demand that Pizza Pizza should match with promotional investment and delivery-specific marketing.' },
-    { titleTemplate: () => 'DoorDash Insights: "Healthy Pizza" and "Cauliflower Crust" Searches Climbing Fast', tags: ['delivery'], urgency: 'medium', summary: 'DoorDash\'s search trend data shows rapid climbing by "healthy pizza," "cauliflower crust," and "gluten-free pizza" searches. Several health-positioned pizza items have moved from outside the top 100 to the top 20 searches within two weeks.', whyItMatters: 'Items climbing quickly on delivery platforms signal emerging demand before it peaks. Pizza Pizza can use these signals to position health-conscious menu options early and capture the demand curve.' },
-    { titleTemplate: () => 'SkipTheDishes Data Shows Pizza Order Patterns Diverge by Daypart — Signals Distinct Demand', tags: ['delivery'], urgency: 'high', summary: 'SkipTheDishes analytics reveal pizza ordering patterns now diverge meaningfully by daypart, with lunch orders skewing toward personal-size and value items while dinner and late-night orders favour family bundles and premium options. The patterns suggest distinct customer segments with different needs.', whyItMatters: 'The daypart divergence confirms that pizza ordering behaviour varies significantly by time of day. Pizza Pizza should optimize delivery promotions and menu features by daypart rather than running uniform offers.' },
+    // ── 4. Fintech (3 pinned) ──
+    { titleTemplate: () => 'Wealthsimple Surpasses 4M Users — Aggressive Ad Spend on TikTok and Instagram Targeting 18-34', tags: ['fintech'], urgency: 'high',
+      summary: 'Wealthsimple has surpassed 4 million users in Canada, driven by aggressive performance marketing on TikTok and Instagram targeting the 18-34 demographic. The fintech\'s ad spend has increased 180% year-over-year, with influencer partnerships and UGC-style content generating strong engagement and conversion rates.',
+      whyItMatters: 'Wealthsimple is the most aggressive competitor in the young-professional investing segment — directly threatening RBC Direct Investing acquisition. RBC wealth campaigns must match Wealthsimple\'s social-native creative approach while emphasizing the depth of RBC\'s advisory and product ecosystem.' },
+    { titleTemplate: () => 'EQ Bank Launches High-Interest Savings at 4.5% — Puts Pressure on Big Five Deposit Products', tags: ['fintech'], urgency: 'high',
+      summary: 'EQ Bank has launched a high-interest savings account at 4.5%, significantly above Big Five savings rates averaging 1.5-2.5%. The offer is supported by a national digital campaign targeting rate-sensitive savers. Early reports suggest meaningful deposit outflows from traditional banks in the first two weeks.',
+      whyItMatters: 'EQ Bank\'s rate advantage is a direct threat to RBC deposit retention. Marketing for GIC and savings products should emphasize the full value of the RBC relationship — security, integration, and advisory access — rather than competing on rate alone.' },
+    { titleTemplate: () => 'Neo Financial Raises $200M Series D — Expansion into Credit Cards and Mortgages', tags: ['fintech'], urgency: 'high',
+      summary: 'Neo Financial has raised $200M in Series D funding and announced plans to expand beyond its core rewards and savings products into credit cards and mortgages. The Calgary-based fintech is positioning itself as a full-service digital banking alternative to the Big Five.',
+      whyItMatters: 'Neo Financial\'s expansion into credit cards and mortgages represents a direct competitive threat across RBC\'s core product lines. Monitor Neo\'s product launches and marketing positioning closely — their venture-backed aggressive pricing could capture price-sensitive segments.' },
 
-    // ── 5. Social & Food Culture (3 pinned) ──
-    { titleTemplate: () => 'r/pizza "What\'s Your Go-To Order?" Weekly Thread Surfaces Regional Pizza Preferences — Canadian Chains Overrepresented', tags: ['social'], urgency: 'high', summary: 'The r/pizza weekly thread has surfaced strong regional preferences, with Canadian commenters showing 4x the average engagement. Multiple users recommend Pizza Pizza for value and consistency, and the thread mirrors previous Reddit-driven brand momentum patterns.', whyItMatters: 'Reddit food threads are high-signal discovery channels — engaged eaters sharing genuine recommendations carry more purchase conviction than algorithmic feeds. Pizza Pizza should monitor these threads as early brand sentiment indicators.' },
-    { titleTemplate: () => 'r/foodToronto "Best Late-Night Pizza" Requests Up 280% — Delivery Speed as Key Differentiator', tags: ['social'], urgency: 'medium', summary: 'The r/foodToronto community is seeing a 280% increase in "best late-night pizza" recommendation requests, with users seeking fast delivery, consistent quality, and value pricing. Thread discussions frequently mention Pizza Pizza as a reliable late-night option with fast delivery times.', whyItMatters: 'Late-night pizza demand is a high-frequency, high-loyalty segment. Reddit sentiment validates Pizza Pizza\'s delivery speed advantage — this should be amplified in late-night digital marketing.' },
-    { titleTemplate: () => 'r/CanadianFood Community Drives Buzz for Regional Pizza Styles — Correlation with Order Surges Strengthening', tags: ['social'], urgency: 'medium', summary: 'The r/CanadianFood subreddit\'s discussion threads around regional pizza styles are increasingly correlated with order surges at Canadian chains. Styles featured in top threads see 3-5x higher order rates, with the effect strongest for chains mentioned by name.', whyItMatters: 'Reddit food communities surface demand signals that are higher-conviction than algorithmic recommendations. Pizza Pizza should monitor r/CanadianFood and use discussion velocity to inform promotional strategy and regional menu features.' },
+    // ── 5. Social & Sentiment (3 pinned) ──
+    { titleTemplate: () => 'r/PersonalFinanceCanada "Best Credit Card" Mega-Thread Goes Viral — 8K Upvotes, Avion Prominently Recommended', tags: ['social'], urgency: 'high',
+      summary: 'A mega-thread on r/PersonalFinanceCanada asking "What\'s the best credit card in Canada right now?" has hit 8K upvotes and 2,400+ comments. RBC Avion is one of the most frequently recommended cards, with users citing travel benefits, lounge access, and points flexibility. The thread is driving significant referral traffic to RBC\'s credit card comparison page.',
+      whyItMatters: 'Reddit mega-threads are high-conviction organic endorsements — they carry more credibility than paid advertising. This thread will be referenced for months. RBC should ensure its credit card landing pages are optimized for the traffic surge and consider subtle community engagement.' },
+    { titleTemplate: () => 'TikTok #FinTok Creators Drive 240% Spike in TFSA Content — Young Investors Influenced by Social', tags: ['social'], urgency: 'high',
+      summary: 'TikTok\'s #FinTok community has driven a 240% spike in TFSA-related content, with creators explaining contribution room, investment strategies, and account comparisons. RBC Direct Investing is mentioned in 18% of TFSA comparison videos, behind Wealthsimple (42%) but ahead of other Big Five platforms.',
+      whyItMatters: '#FinTok is becoming a primary discovery channel for young investors choosing investment platforms. RBC Direct Investing needs stronger social-native content to close the awareness gap with Wealthsimple — creator partnerships and UGC-style educational content should be prioritized.' },
+    { titleTemplate: () => 'r/churningcanada Community Grows to 180K — Sophisticated Consumers Optimizing Card Signup Bonuses', tags: ['social'], urgency: 'medium',
+      summary: 'The r/churningcanada community has grown to 180K members, with increasingly sophisticated discussions around credit card signup bonus optimization, product switching strategies, and points maximization. RBC products are frequently discussed, with Avion\'s welcome bonus and annual fee waiver strategies being popular topics.',
+      whyItMatters: 'The churning community represents a double-edged sword — they drive sign-up volume but can increase acquisition costs through bonus optimization. Understanding their behaviour helps RBC design retention-focused card strategies and anticipate promotional response patterns.' },
 
-    // ── 6. Sports, Events & Partnerships (3 pinned) ──
-    { titleTemplate: () => 'Game Day Pizza Orders Surge 340% During NHL Playoffs — QSR Brands Race to Capture Sports Moments', tags: ['sports'], urgency: 'high', summary: 'QSR industry data shows pizza orders surge 340% during NHL playoff games, with the effect strongest in Canadian markets. Brands with pre-game ordering features, sports partnerships, and real-time promotional triggers are capturing disproportionate share of the demand spike.', whyItMatters: 'Sports-driven pizza ordering is predictable and massive. Pizza Pizza\'s presence across Canadian markets and delivery capabilities position it to capture this demand — but only with proactive sports-moment marketing and pre-game ordering campaigns.' },
-    { titleTemplate: () => 'Super Bowl Pizza Demand Forecast Up 42% — Pre-Order Windows Driving Early Commitment', tags: ['sports'], urgency: 'high', summary: 'Super Bowl pizza demand forecasts show a 42% increase over last year, with pre-order features driving 65% of orders to be placed 24+ hours in advance. QSR brands with early pre-order capabilities and party-size bundles are expected to capture the majority of incremental demand.', whyItMatters: 'Super Bowl is the single biggest pizza ordering day of the year. Pizza Pizza should launch pre-order campaigns early and feature party platters and group bundles prominently in all channels.' },
-    { titleTemplate: () => 'Raptors Partnership and Arena Presence Drive Brand Recall Among 18-34 Demographic', tags: ['sports'], urgency: 'medium', summary: 'Sports marketing analytics show QSR brands with arena presence and team partnerships see 2.8x higher brand recall among 18-34 consumers. In-arena activations, courtside branding, and social media co-promotions with teams are the highest-impact touchpoints.', whyItMatters: 'Sports partnerships are a high-value brand-building channel for QSR. Pizza Pizza should evaluate arena presence ROI and consider expanding sports marketing investment to capture the young-adult demographic that indexes highest for pizza ordering.' },
+    // ── 6. Sports (3 pinned) ──
+    { titleTemplate: () => 'RBC Canadian Open Attendance Breaks Records — 280K Visitors, Brand Activations Generate Significant Social Buzz', tags: ['sports'], urgency: 'high',
+      summary: 'The RBC Canadian Open drew record attendance of 280K visitors over the tournament week. Brand activations including the RBC Experience Zone, athlete meet-and-greets, and social media content generated over 45M impressions. Post-event surveys show a 28% lift in RBC brand consideration among attendees.',
+      whyItMatters: 'Record attendance validates RBC\'s investment in the Canadian Open as a premier brand activation platform. The 28% consideration lift among attendees is a strong ROI signal — post-event retargeting of attendees and social engagers should be activated immediately.' },
+    { titleTemplate: () => 'Sports Sponsorship ROI for Financial Brands Hits All-Time High — 32% Lift in Brand Consideration', tags: ['sports'], urgency: 'medium',
+      summary: 'Industry research shows financial services brands with active sports sponsorships are seeing a 32% lift in brand consideration and 22% higher trust scores compared to non-sponsoring competitors. Golf, hockey, and Olympic sponsorships deliver the highest ROI for banking brands in the Canadian market.',
+      whyItMatters: 'Sports sponsorship ROI at all-time highs validates RBC\'s portfolio of golf, hockey, and Olympic partnerships. Consider increasing sports marketing investment to capture disproportionate brand consideration gains — especially among the 25-54 demographic that indexes highest for financial product decisions.' },
+    { titleTemplate: () => 'Team RBC Athletes Win 4 Majors in 2025 — Media Value of Golf Sponsorship Portfolio Exceeds $120M', tags: ['sports'], urgency: 'medium',
+      summary: 'Team RBC athletes collectively won 4 major golf championships in 2025, generating an estimated $120M in media value for the RBC brand. The wins drove significant organic social media coverage and brand association, with RBC mentions in golf media up 340% during championship weeks.',
+      whyItMatters: 'Major championship wins create peak media value moments for RBC\'s golf sponsorship portfolio. The $120M media value equivalent far exceeds sponsorship costs — this data supports continued and expanded investment in Team RBC athlete partnerships.' },
 
-    // ── 7. Corporate Sponsorships (3 pinned) ──
-    { titleTemplate: () => 'Maple Leafs Playoff Push Ignites Toronto — City-Wide Watch Parties Expected to Drive Record Pizza Demand', tags: ['sponsorships'], urgency: 'high', summary: 'The Toronto Maple Leafs have clinched a playoff berth with home-ice advantage, and the city is buzzing. Sports analysts project record viewership for the first-round series, with bars, restaurants, and living rooms across the GTA expected to host massive watch parties. Historical data shows pizza orders in Toronto surge 4-5x during Leafs playoff games.', whyItMatters: 'As a Maple Leafs corporate sponsor, Pizza Pizza has a unique activation window. Playoff games are the highest-engagement moments for the partnership — coordinated in-arena promotions, social content tied to game outcomes, and geo-targeted delivery ads around Scotiabank Arena can capture disproportionate share of the demand spike.' },
-    { titleTemplate: () => 'PWHL Championship Series Draws Record Viewership — League Audience Up 180% Year-Over-Year', tags: ['sponsorships'], urgency: 'high', summary: 'The PWHL Championship Series is drawing record audiences, with viewership up 180% year-over-year and significant growth in the 18-34 female demographic. The league\'s Toronto and Montreal franchises are leading attendance, and social media engagement around the championship is outpacing projections by 3x.', whyItMatters: 'PWHL\'s explosive growth makes Pizza Pizza\'s sponsorship increasingly valuable. The league\'s audience skews younger and more digitally engaged than traditional hockey — ideal for social-first activations, TikTok content tied to game moments, and loyalty program cross-promotions targeting an underserved demographic.' },
-    { titleTemplate: () => 'BC Lions Announce 2026 Season Opener at BC Place — CFL Pre-Season Buzz Building in Western Canada', tags: ['sponsorships'], urgency: 'medium', summary: 'The BC Lions have announced their 2026 season opener at BC Place with expanded fan activations and partner integrations. CFL pre-season buzz is building across Western Canada, with ticket sales up 22% and social media engagement around the Lions brand trending upward as the league invests in younger fan engagement.', whyItMatters: 'The BC Lions season opener is an anchor activation moment for Pizza Pizza\'s CFL sponsorship in Western Canada. Early-season games generate outsized media attention and fan enthusiasm — the ideal window for in-stadium sampling, co-branded content, and regional delivery promotions tied to the Lions brand.' },
+    // ── 7. Sponsorships (3 pinned) ──
+    { titleTemplate: () => 'RBC Canadian Open 2026 Announced at St. George\'s Golf Club — Early Ticket Sales Up 45%', tags: ['sponsorships'], urgency: 'high',
+      summary: 'The 2026 RBC Canadian Open has been announced at St. George\'s Golf and Country Club in Toronto, with early ticket sales up 45% over the prior year. The tournament will feature an expanded corporate hospitality program and enhanced digital fan experiences. Media coverage is positioning the event as a must-attend for Toronto\'s business community.',
+      whyItMatters: 'Strong early ticket sales indicate growing event prestige and corporate interest. RBC should leverage the announcement momentum to activate early hospitality sales, corporate partnership conversations, and pre-event brand campaigns targeting the Toronto business community.' },
+    { titleTemplate: () => 'Team RBC Adds Two Rising PGA Tour Stars — Portfolio Now Spans 12 Athletes Across Golf and Olympic Sports', tags: ['sponsorships'], urgency: 'medium',
+      summary: 'RBC has expanded its athlete sponsorship portfolio to 12 athletes by adding two rising PGA Tour stars with strong social media followings. The portfolio now spans professional golf and Olympic sports, providing year-round brand visibility across major sporting events and social media channels.',
+      whyItMatters: 'Expanding the athlete portfolio with social-media-native athletes ensures RBC\'s sponsorship investment generates value beyond traditional broadcast — younger athletes with strong Instagram and TikTok presence create content opportunities that align with digital-first marketing strategies.' },
+    { titleTemplate: () => 'RBC Community Sponsorship Program Reaches 1,200 Events Nationwide — Grassroots Brand Building', tags: ['sponsorships'], urgency: 'medium',
+      summary: 'RBC\'s community sponsorship program has reached 1,200 events across every Canadian province and territory. The program spans local sports teams, cultural festivals, charitable runs, and community celebrations, generating grassroots brand presence in markets where national advertising alone cannot reach.',
+      whyItMatters: 'Community sponsorship creates hyperlocal brand affinity that complements national campaigns. Each event generates organic social content and word-of-mouth — marketing should integrate community sponsorship stories into regional campaigns to create authentic local connection.' },
 
-    // ── 8. Competitor Watch (3 pinned) ──
-    { titleTemplate: () => 'Domino\'s Launches "Emergency Pizza" Loyalty Promotion — Free Pizza on Any Order Over $15', tags: ['competitors'], urgency: 'high', competitor: 'Domino\'s', summary: 'Domino\'s Canada has launched its "Emergency Pizza" promotion, offering loyalty members a free medium pizza redeemable within 30 days on any order over $15. The campaign is running across digital, TV, and social channels with heavy investment in TikTok creator partnerships. Early reports suggest a 25% spike in app downloads in the first week.', whyItMatters: 'Domino\'s is using aggressive loyalty mechanics to drive app installs and lock in repeat ordering behaviour. The "free pizza" hook is a direct acquisition play targeting price-sensitive consumers — the same segment Pizza Pizza competes for with family deals and value promotions.' },
-    { titleTemplate: () => 'Pizza Nova Expands to 200 Locations — Western Canada Entry Signals National Ambition', tags: ['competitors'], urgency: 'high', competitor: 'Pizza Nova', summary: 'Pizza Nova has opened its 200th location and announced plans to enter Western Canada for the first time, targeting Calgary and Edmonton. The expansion is backed by a new franchise model offering lower initial investment and a refreshed store design. Pizza Nova is positioning its Italian heritage and fresh-dough messaging as key differentiators.', whyItMatters: 'Pizza Nova\'s Western expansion puts direct competitive pressure on Pizza Pizza\'s stronghold markets. Their fresh-dough and Italian-heritage positioning targets the premium-value segment — Pizza Pizza should monitor whether this messaging resonates and whether it erodes share in overlapping markets.' },
-    { titleTemplate: () => 'Pizza Hut Rolls Out $7.99 Lunch Combo Nationwide — Aggressive Value Play Targets Weekday Daypart', tags: ['competitors'], urgency: 'high', competitor: 'Pizza Hut', summary: 'Pizza Hut Canada has launched a $7.99 lunch combo available Monday-Friday from 11AM-2PM, featuring a personal pizza, drink, and breadstick. The promotion is supported by a national TV and digital campaign with heavy Google Search investment on "cheap lunch" and "lunch deals near me" keywords.', whyItMatters: 'Pizza Hut\'s lunch combo is a direct attack on the weekday lunch daypart — an area where Pizza Pizza competes for quick-service occasions. The $7.99 price point is designed to undercut competitors and drive trial. Monitor whether this shifts Pizza Pizza\'s lunch traffic in overlapping markets.' },
+    // ── 8. Competitors (3 pinned) ──
+    { titleTemplate: () => 'TD Launches "TD First Class Travel" Visa Infinite — Direct Competitor to Avion with 6x Points on Travel', tags: ['competitors'], urgency: 'high', competitor: 'TD',
+      summary: 'TD has launched the "TD First Class Travel" Visa Infinite card offering 6x points on travel purchases, a $400 welcome bonus, and complimentary Priority Pass lounge access. The card is supported by a $15M launch campaign across TV, digital, and social channels targeting premium travellers — the same audience RBC Avion competes for.',
+      whyItMatters: 'TD\'s new card is a direct competitive response to Avion\'s market leadership. The 6x travel earn rate matches Avion\'s best tier. RBC should consider a competitive response emphasizing Avion\'s broader ecosystem, established lounge network, and travel insurance superiority.' },
+    { titleTemplate: () => 'Scotiabank Scene+ Integrates with Cineplex and Grocery — Lifestyle Rewards Positioning', tags: ['competitors'], urgency: 'high', competitor: 'Scotiabank',
+      summary: 'Scotiabank has expanded Scene+ integration to include Cineplex entertainment and grocery partners, positioning Scene+ as a lifestyle rewards program rather than purely travel-focused. The strategy targets families and everyday spenders who value practical rewards over aspirational travel benefits.',
+      whyItMatters: 'Scotiabank is differentiating Scene+ from travel-focused competitors like Avion by targeting everyday spending. RBC should monitor whether this lifestyle positioning shifts card consideration among families — the RBC Rewards program may need to emphasize its own everyday earning potential.' },
+    { titleTemplate: () => 'BMO Launches "BMO alto" Digital-Only Savings Account at 4.25% — Competing with Fintech Challengers', tags: ['competitors'], urgency: 'high', competitor: 'BMO',
+      summary: 'BMO has launched "BMO alto," a digital-only savings account offering 4.25% interest with no minimum balance. The product is designed to compete directly with fintech challengers like EQ Bank and Wealthsimple Cash, using BMO\'s brand trust and CDIC insurance as key differentiators against digital-native competitors.',
+      whyItMatters: 'BMO alto signals that Big Five banks are taking fintech savings competition seriously. If BMO\'s digital-only approach succeeds, RBC may need a similar high-yield digital savings product to prevent deposit outflows to both fintech and Big Five competitors.' },
 
-    // ── 9. Macro Consumer & QSR Environment (3 pinned) ──
-    { titleTemplate: () => 'Canadian Consumer Confidence Dips in Q1 2026 — Discretionary Spending Under Pressure', tags: ['macro'], urgency: 'high', summary: 'The Conference Board of Canada reports consumer confidence declined in Q1 2026, with 62% of Canadians reporting they plan to reduce discretionary spending over the next 6 months. QSR and fast-casual categories show relative resilience as consumers trade down from full-service dining.', whyItMatters: 'A cautious spending environment means Pizza Pizza must emphasize value, convenience, and everyday affordability in all communications. Premium-only strategies will underperform; value-forward positioning wins.' },
-    { titleTemplate: () => 'Digital Ordering Share of Canadian QSR Reaches 38% — Mobile-First Chains Outperform', tags: ['macro'], urgency: 'medium', summary: 'Restaurants Canada reports digital ordering now represents 38% of total QSR sales, up from 29% a year ago. Chains with strong mobile apps, loyalty integration, and direct ordering capabilities are growing 2.3x faster than those dependent on third-party platforms.', whyItMatters: 'Digital ordering is no longer optional — it\'s the growth driver. Pizza Pizza\'s investment in the app, direct ordering, and Pizza Pizza Club integration positions it well, but execution must keep pace with rising consumer expectations for speed and convenience.' },
-    { titleTemplate: () => 'Canadian QSR Foot Traffic Stabilizes But Shifts to Value-Led and Convenience-First Brands', tags: ['macro'], urgency: 'medium', summary: 'QSR foot traffic data shows overall visits have stabilized after two years of shifting patterns, but traffic is redistributing toward value-led and convenience-first brands. Pizza and burger chains are among the beneficiaries, while premium fast-casual concepts continue to lose share of visits.', whyItMatters: 'Foot traffic stabilization with a shift toward value-led QSR is a positive signal for Pizza Pizza\'s model. The value-and-convenience positioning is exactly the kind of everyday QSR that is capturing redirected traffic from full-service and premium fast-casual.' },
+    // ── 9. Macro (3 pinned) ──
+    { titleTemplate: () => 'Canadian Consumer Confidence Rises in Q1 2026 — But Housing Affordability Remains Top Concern', tags: ['macro'], urgency: 'high',
+      summary: 'The Conference Board of Canada reports consumer confidence rose modestly in Q1 2026, driven by easing inflation and stable employment. However, housing affordability remains the #1 consumer concern, with 68% of Canadians citing it as their primary financial worry. Spending intent is cautiously positive for financial products.',
+      whyItMatters: 'Rising confidence creates opportunity for financial product marketing, but housing anxiety means mortgage and homeownership messaging must be carefully calibrated. Emphasize accessibility and support rather than aspirational homeownership narratives.' },
+    { titleTemplate: () => 'Bank of Canada Holds Rate at 3.25% — Signals Data-Dependent Approach for Remainder of 2026', tags: ['macro'], urgency: 'high',
+      summary: 'The Bank of Canada held its benchmark rate at 3.25%, signalling a data-dependent approach for the remainder of 2026. The decision was widely expected, but the accompanying statement emphasized housing market stability concerns and global trade uncertainty as key factors in future rate decisions.',
+      whyItMatters: 'Rate stability provides a predictable environment for mortgage and savings marketing. RBC should use the holding pattern to emphasize rate-lock advantages for mortgage products and competitive GIC rates while the rate environment remains attractive.' },
+    { titleTemplate: () => 'Canadian Household Debt-to-Income Ratio Stabilizes at 175% — Mortgage Renewals at Higher Rates Become Key Concern', tags: ['macro'], urgency: 'medium',
+      summary: 'Statistics Canada reports the household debt-to-income ratio has stabilized at 175%, with mortgage debt comprising the largest component. Approximately 2.2 million Canadian mortgages will renew in 2026-2027, many at significantly higher rates than their original terms. Financial advisors are urging proactive renewal planning.',
+      whyItMatters: 'The mortgage renewal wave is a massive marketing opportunity for RBC. Proactive outreach to existing customers and competitive conquest campaigns targeting renewing borrowers at other institutions should be a priority for the mortgage marketing team.' },
 
-    // ── Loop articles (recycled across dates) ──
+    // ── Loop articles ──
     // Brand loop
-    { titleTemplate: () => 'Pizza Pizza Brand Sentiment Surges After Viral TikTok Showing 30-Minute Delivery Challenge', tags: ['brand'], urgency: 'medium', summary: 'A TikTok video showing a Pizza Pizza delivery arriving in under 30 minutes during a snowstorm went viral, generating 1.2M views and shifting brand sentiment measurably positive across social platforms. The organic moment reinforced Pizza Pizza\'s delivery reliability with younger audiences.', whyItMatters: 'Viral delivery moments are high-value brand signals — they validate Pizza Pizza\'s operational excellence and generate organic reach that paid media should amplify before the moment fades.' },
-    { titleTemplate: () => 'Pizza Pizza Opens 15 New Locations Across Suburban Ontario and Western Canada', tags: ['brand'], urgency: 'medium', summary: 'Pizza Pizza has opened 15 new locations across suburban Ontario and Western Canada markets, featuring updated store designs with digital ordering kiosks and expanded delivery zones. The expansion targets underserved markets with strong local demand for value QSR.', whyItMatters: 'New store openings signal confidence in the expansion model and extend Pizza Pizza\'s delivery radius. Each opening is an opportunity to generate local media coverage and geo-targeted marketing to build awareness in new markets.' },
-    { titleTemplate: () => 'Pizza Pizza Partners with NHL Team for Exclusive Game Day Combo — Sells Out Opening Night', tags: ['brand'], urgency: 'high', summary: 'Pizza Pizza\'s exclusive NHL team partnership featuring a limited-edition game day combo sold out at arena locations on opening night. The partnership included co-branded packaging, social media activations, and in-arena promotions, generating significant social buzz and media coverage.', whyItMatters: 'Exclusive sports partnerships reinforce Pizza Pizza\'s cultural relevance and create urgency-driven purchase moments that competitors cannot replicate. The sell-through velocity validates the sports marketing strategy.' },
+    { titleTemplate: () => 'RBC Mobile App Downloads Surge 42% After Feature Update — Biometric Login and Instant E-Transfer Drive Adoption', tags: ['brand'], urgency: 'medium',
+      summary: 'RBC\'s mobile banking app saw a 42% surge in downloads following a major feature update introducing biometric login and instant e-Transfer. App store ratings improved to 4.7/5.0, and mobile-first transaction volume increased significantly in the first two weeks post-update.',
+      whyItMatters: 'App adoption surges create windows for cross-selling financial products to newly engaged digital customers. Marketing should capitalize on the positive sentiment with in-app product recommendations and targeted push notification campaigns.' },
+    { titleTemplate: () => 'RBC Named Canada\'s Most Valuable Banking Brand — BrandZ Global Rankings Place RBC at #26 Worldwide', tags: ['brand'], urgency: 'high',
+      summary: 'BrandZ\'s annual global brand valuation has ranked RBC as Canada\'s most valuable banking brand and #26 globally across all financial services brands. The ranking cited RBC\'s digital transformation leadership, sponsorship portfolio strength, and customer satisfaction scores as key drivers of brand equity growth.',
+      whyItMatters: 'Global brand ranking validation provides powerful third-party credibility. This data point should be integrated into corporate brand campaigns and used as a trust signal in competitive markets where RBC faces challenges from fintech and Big Five competitors.' },
+    { titleTemplate: () => 'RBC Wealth Management Client Assets Reach Record $1.2T — Advisory Platform Modernization Cited as Growth Driver', tags: ['brand'], urgency: 'medium',
+      summary: 'RBC Wealth Management has reached record client assets of $1.2 trillion, driven by platform modernization and a 28% increase in new advisory relationships. The growth is concentrated in the high-net-worth and ultra-high-net-worth segments, with digital onboarding reducing client acquisition timelines by 60%.',
+      whyItMatters: 'Record wealth management assets validate RBC\'s investment in advisory platform modernization. Marketing for Dominion Securities and Direct Investing should leverage the scale narrative — "Canada\'s largest wealth platform" is a compelling trust signal for high-net-worth prospects.' },
 
-    // QSR loop
-    { titleTemplate: () => 'Canadian Independent QSR Operators Report 22% Revenue Growth — Pizza Category Leads', tags: ['qsr'], urgency: 'medium', summary: 'Canadian independent QSR operators report 22% revenue growth driven by pizza and burger categories. The growth is attributed to social media marketing, delivery platform presence, and renewed consumer interest in local and Canadian-owned brands.', whyItMatters: 'Independent QSR growth signals a competitive landscape where Pizza Pizza must differentiate on scale, consistency, and digital ordering capabilities while maintaining its Canadian-brand identity advantage.' },
-    { titleTemplate: () => 'Ghost Kitchen Model Expands Across Canadian QSR — Delivery-Only Brands Gain Market Share', tags: ['qsr'], urgency: 'low', summary: 'Industry data shows ghost kitchen concepts have expanded rapidly across Canadian QSR, with delivery-only pizza brands gaining meaningful market share. The model offers lower overhead but lacks the brand presence and customer experience of established chains.', whyItMatters: 'Ghost kitchen expansion creates new competitive pressure for Pizza Pizza on delivery platforms. The advantage of physical locations, brand recognition, and customer trust should be emphasized — delivery-only brands compete on price but cannot match the full experience.' },
-    { titleTemplate: () => 'Restaurants Canada Reports Pizza as Most-Ordered QSR Category for Third Year Running', tags: ['qsr'], urgency: 'medium', summary: 'Restaurants Canada reports pizza remains the most-ordered QSR category for the third consecutive year, with order volume up 12% and revenue up 15%. Family meal bundles, delivery orders, and late-night purchasing are driving the growth.', whyItMatters: 'Sustained pizza category leadership validates Pizza Pizza\'s core business. The brand should lean into category-level messaging that positions Pizza Pizza as the definitive Canadian pizza destination.' },
+    // Banking loop
+    { titleTemplate: () => 'Open Banking Pilot Programs Launch in Ontario — Early Consumer Adoption Signals Strong Demand for Data Portability', tags: ['banking'], urgency: 'medium',
+      summary: 'Ontario\'s open banking pilot programs have launched with strong early consumer adoption, with 340K users connecting their bank accounts to third-party comparison tools in the first month. The pilots suggest Canadians are eager to compare financial products across institutions when given easy access to their data.',
+      whyItMatters: 'Strong pilot adoption confirms that open banking will drive product comparison shopping. RBC must ensure its products compete well in side-by-side comparisons — rate transparency, fee structures, and digital experience quality will be the key differentiators.' },
+    { titleTemplate: () => 'Canadian Banking Cybersecurity Standards Updated — OSFI Requires AI-Powered Fraud Detection by 2027', tags: ['banking'], urgency: 'medium',
+      summary: 'OSFI has updated cybersecurity standards to require AI-powered fraud detection systems across all federally regulated banks by 2027. The new requirements include real-time transaction monitoring, behavioural biometrics, and enhanced customer authentication. Banks are investing heavily in cybersecurity infrastructure.',
+      whyItMatters: 'Cybersecurity investment is both a compliance requirement and a marketing opportunity. RBC should frame its security investments as customer protection — "your money is safe with RBC" messaging resonates with consumers increasingly concerned about digital fraud.' },
 
-    // Menu loop
-    { titleTemplate: () => 'Spicy and Global Flavour Profiles Emerge as TikTok-Driven Pizza Trend', tags: ['menu'], urgency: 'medium', summary: 'A new trend of spicy and global-flavour pizza combinations is emerging rapidly on TikTok, with Korean gochujang, Nashville hot chicken, and mango habanero toppings gaining traction. The trend is attracting younger consumers who want adventurous flavours, and related videos are generating millions of views.', whyItMatters: 'Emerging flavour trends caught early give Pizza Pizza a menu innovation advantage. Spicy and global flavours align with the younger demographic\'s taste preferences — an opportunity for limited-time offers and social media-driven launches.' },
-    { titleTemplate: () => 'Breakfast Pizza Sees Unexpected Demand Surge — QSR Chains Report Morning Daypart Growth', tags: ['menu'], urgency: 'medium', summary: 'Breakfast pizza is experiencing unexpected demand growth, driven by QSR chains adding morning daypart options. Sales data shows 30% month-over-month growth in breakfast pizza items, with the trend strongest among 25-44 consumers.', whyItMatters: 'Breakfast pizza demand growth could unlock a new daypart for Pizza Pizza. Morning pizza represents incremental revenue with minimal operational complexity — the ovens are already hot.' },
-    { titleTemplate: () => 'Pizza Subscription Models Gain Traction — "Unlimited Slice" and Monthly Plans Fragment the Market', tags: ['menu'], urgency: 'low', summary: 'Pizza subscription models are fragmenting the market, with "unlimited slice" programs and monthly pizza plans gaining traction among frequent orderers. Early data shows subscribers order 3.2x more frequently than non-subscribers.', whyItMatters: 'Subscription models create competitive pressure by locking in customer frequency. Pizza Pizza should evaluate whether a subscription tier within the Pizza Pizza Club loyalty program could capture this demand and increase order frequency.' },
+    // Credit cards loop
+    { titleTemplate: () => 'Premium Credit Card Applications in Canada Rise 34% — Travel Recovery Drives Demand for Rewards Cards', tags: ['credit-cards'], urgency: 'medium',
+      summary: 'Premium credit card applications across Canadian banks have risen 34% year-over-year, driven by continued travel recovery and consumer demand for travel rewards, lounge access, and insurance coverage. The growth is strongest among 25-45 professionals with household income above $100K.',
+      whyItMatters: 'Rising premium card demand is a tailwind for RBC Avion. Marketing should emphasize the full premium experience — lounge access, travel insurance, and concierge services — to capture high-value applicants while demand is elevated.' },
+    { titleTemplate: () => 'Canadian Credit Card Spending Hits Record $65B in Q4 — E-Commerce and Travel Drive Growth', tags: ['credit-cards'], urgency: 'medium',
+      summary: 'Canadian credit card spending reached a record $65B in Q4 2025, with e-commerce transactions up 28% and travel spending up 42% year-over-year. The growth is driving increased interchange revenue for card issuers and creating opportunities for targeted rewards and loyalty marketing.',
+      whyItMatters: 'Record spending volume validates the overall card business model. RBC should use spending data insights to create targeted rewards campaigns — e.g., bonus points on travel categories during peak booking seasons, or accelerated earn rates for e-commerce to drive card-on-file behaviour.' },
 
-    // Delivery loop
-    { titleTemplate: () => 'UberEats Reports Pizza Bundle Orders Surge 52% — Combo Deals and Family Packs Leading', tags: ['delivery'], urgency: 'high', summary: 'UberEats Canada reports pizza bundle orders are up 52% year-over-year, with combo deals and family-size bundles among the fastest-growing order types. Data shows group ordering intent drives 78% of bundle purchases.', whyItMatters: 'Delivery platform data proving demand for pizza bundles validates Pizza Pizza\'s family meal deal strategy. Pizza Pizza can differentiate with better value and larger bundle options than competitors offer on aggregator platforms.' },
-    { titleTemplate: () => 'DoorDash Order Velocity Spikes for Three Regional Pizza Chains — Breakout Signals Emerging', tags: ['delivery'], urgency: 'medium', summary: 'Three regional pizza chains have shown rapid order volume growth on DoorDash over the past two weeks, with orders growing 5-8x faster than comparable chains. The pattern typically precedes mainstream expansion by 4-6 weeks.', whyItMatters: 'Order velocity spikes on delivery platforms are leading indicators of competitive threats. Pizza Pizza should monitor these chains\' expansion plans and marketing strategies to maintain delivery market share.' },
-    { titleTemplate: () => 'SkipTheDishes Late-Night Pizza Orders Surge 38% — 10PM-2AM Window Fastest-Growing Daypart', tags: ['delivery'], urgency: 'medium', summary: 'SkipTheDishes data shows late-night pizza orders (10PM-2AM) are up 38%, making it the fastest-growing daypart on the platform. Student areas and downtown cores are driving the growth, with average order values 22% higher than daytime orders.', whyItMatters: 'Late-night delivery demand confirms the strategic importance of Pizza Pizza\'s Late Night Cravings campaign. Extended hours and fast delivery in high-demand zones are competitive advantages worth amplifying in marketing.' },
+    // Fintech loop
+    { titleTemplate: () => 'Canadian Fintech Investment Reaches $3.8B in 2025 — Payments and Lending Lead Funding Categories', tags: ['fintech'], urgency: 'medium',
+      summary: 'Canadian fintech investment reached $3.8B in 2025, with payments and lending startups attracting the most capital. Investor interest is concentrated in companies challenging traditional banking products — savings accounts, credit cards, and mortgage origination. Several fintechs are now pursuing banking licences.',
+      whyItMatters: 'Sustained fintech investment means competition will intensify, not subside. RBC must continuously improve its digital products to match fintech user experience standards while leveraging its regulatory moat and brand trust as competitive advantages.' },
+    { titleTemplate: () => 'KOHO Launches Credit Building Product — Free Alternative to Traditional Credit Cards Targets Underserved Canadians', tags: ['fintech'], urgency: 'medium',
+      summary: 'KOHO has launched a credit building product that allows users to build credit scores without a traditional credit card, targeting underserved Canadians including newcomers, students, and those with limited credit history. The product is free with a premium upgrade path.',
+      whyItMatters: 'KOHO\'s credit builder targets the same newcomer and student segments as RBC\'s Welcome to Canada and Student Banking campaigns. RBC should monitor KOHO\'s acquisition metrics in these segments and ensure its own onboarding experience remains competitive for credit-building customers.' },
 
     // Social loop
-    { titleTemplate: () => 'r/pizza "Pizza Hack" Posts Drive Order Experimentation — Custom Toppings and Secret Menu Items', tags: ['social'], urgency: 'medium', summary: 'The r/pizza community\'s popular "pizza hack" and "secret menu" posts are driving order experimentation, with users creating custom topping combinations and sharing results. Multiple posts reference Pizza Pizza\'s customization options as ideal for hack experiments.', whyItMatters: 'The "pizza hack" trend is a natural fit for Pizza Pizza\'s customizable menu. Marketing should lean into the experimentation angle — encourage UGC content showing creative custom orders to drive engagement and repeat visits.' },
-    { titleTemplate: () => 'r/foodToronto Grows to 280K Members — Pizza Remains Most-Discussed QSR Category', tags: ['social'], urgency: 'low', summary: 'Reddit\'s r/foodToronto community has grown to 280K members, with pizza consistently the most-discussed QSR category. The community\'s recommendations increasingly influence ordering decisions among engaged food enthusiasts in the GTA.', whyItMatters: 'Reddit food communities surface high-conviction opinions — Pizza Pizza\'s presence in these conversations builds organic credibility with a key demographic. Monitor for sentiment shifts and competitive mentions.' },
-    { titleTemplate: () => 'TikTok #PizzaReview Trend Drives 340% Spike in User-Generated Pizza Content', tags: ['social'], urgency: 'medium', summary: 'The TikTok #PizzaReview trend has driven a 340% spike in user-generated pizza content, with creators reviewing slices from various chains and rating them on camera. The trend is reshaping how younger consumers discover and choose pizza brands.', whyItMatters: 'TikTok pizza reviews are becoming a primary discovery channel for younger consumers. Pizza Pizza should encourage and amplify positive UGC reviews and consider creator partnerships to ensure strong representation in the trend.' },
+    { titleTemplate: () => 'Reddit r/PersonalFinanceCanada "Rate My Portfolio" Weekly Thread Shows Growing Interest in RBC Direct Investing', tags: ['social'], urgency: 'medium',
+      summary: 'The popular weekly "Rate My Portfolio" thread on r/PersonalFinanceCanada shows growing mentions of RBC Direct Investing, with users citing the platform\'s research tools and RRSP/TFSA integration. While Wealthsimple remains the most recommended platform, RBC\'s share of positive mentions has increased 15% over the past quarter.',
+      whyItMatters: 'Organic Reddit sentiment shifting toward RBC Direct Investing signals that product improvements are being noticed by the community. Marketing should monitor these threads for content inspiration and consider community engagement strategies that build on this positive momentum.' },
+    { titleTemplate: () => 'TikTok "Day in My Life as a Banker" Trend Generates 180M Views — Humanizing Financial Institutions', tags: ['social'], urgency: 'low',
+      summary: 'A TikTok trend featuring bank employees sharing "day in my life" content has generated 180M views globally, with Canadian bank employees prominently represented. The content humanizes financial institutions and is driving positive sentiment among younger demographics.',
+      whyItMatters: 'Employee-generated content on TikTok creates authentic brand visibility at zero media cost. RBC should consider supporting employee content creation within brand guidelines — the trend humanizes the institution and resonates with demographics that distrust corporate advertising.' },
 
     // Sports loop
-    { titleTemplate: () => 'March Madness and NHL Playoffs Drive Catering Order Surge — Office and Watch Party Bundles Spike', tags: ['sports'], urgency: 'medium', summary: 'Google Trends data shows sports event catering searches are starting 2 weeks earlier than last year, with "pizza for watch party," "game day catering," and "office pizza order" among the fastest-growing queries. Search intent is shifting toward group and party-size orders.', whyItMatters: 'Earlier search intent for sports catering means earlier marketing activation. Pizza Pizza should launch sports season catering campaigns now rather than waiting for the traditional window — the demand curve has shifted.' },
-    { titleTemplate: () => 'Sports Sponsorship ROI for QSR Brands Reaches All-Time High — 28% Lift in Brand Recall', tags: ['sports'], urgency: 'medium', summary: 'Marketing analytics show QSR brands with active sports sponsorships are seeing a 28% lift in brand recall and 18% higher order frequency among fans. Arena naming rights, team partnerships, and in-game promotions are the highest-ROI activation types.', whyItMatters: 'Sports sponsorship ROI at all-time highs validates Pizza Pizza\'s investment in sports marketing. Increasing sports partnership spend could unlock disproportionate brand recall and order frequency gains among key demographics.' },
-    { titleTemplate: () => 'FIFA World Cup 2026 Pizza Demand Forecast — Canadian Host Cities Expected to See 5x Order Spikes', tags: ['sports'], urgency: 'medium', summary: 'The upcoming FIFA World Cup 2026 in Canadian host cities is forecast to drive 5x pizza order spikes during match windows. QSR brands are already planning expanded delivery capacity, temporary locations near venues, and co-branded promotions.', whyItMatters: 'The World Cup represents a once-in-a-generation demand event for Pizza Pizza in Canadian host cities. Early planning for delivery capacity, promotional strategy, and venue presence will determine share of the incremental demand.' },
+    { titleTemplate: () => 'NHL Playoffs Drive Surge in Financial Product Searches — "Best Credit Card" Queries Up 45% During Game Nights', tags: ['sports'], urgency: 'medium',
+      summary: 'Google Trends data shows a 45% increase in financial product searches during NHL playoff game nights, with "best credit card," "savings account rates," and "investment app" among the most searched terms. The correlation suggests sports viewers are engaged and receptive to financial advertising during live sports.',
+      whyItMatters: 'Sports viewership drives financial product consideration — a valuable insight for media planning. RBC should ensure strong search presence for key financial product terms during NHL playoff periods and align CTV and social ad delivery with game schedules.' },
+    { titleTemplate: () => 'Golf Sponsorship ROI Study Shows 3.5x Return for Financial Brands — RBC Canadian Open Among Top Performers', tags: ['sports'], urgency: 'medium',
+      summary: 'A new sponsorship ROI study shows financial services brands generate an average 3.5x return on golf sponsorship investment, with the RBC Canadian Open ranking among the top three performing events globally. The study attributes the high ROI to golf\'s affluent audience profile and extended brand engagement during tournament week.',
+      whyItMatters: 'Quantified ROI data validates continued and expanded investment in the RBC Canadian Open. The 3.5x return figure should be used in internal budget discussions and can inform future sponsorship portfolio decisions.' },
 
     // Sponsorships loop
-    { titleTemplate: () => 'Maple Leafs Star Signs Extension — Fan Engagement Peaks as Jersey Sales Break Records', tags: ['sponsorships'], urgency: 'medium', summary: 'A Maple Leafs star player has signed a long-term contract extension, sending fan engagement metrics to season highs. Jersey sales broke single-day records and social media mentions of the Leafs spiked 420% in the 24 hours following the announcement. The moment generated significant organic content from fans celebrating across Toronto.', whyItMatters: 'High-emotion fan moments are the most valuable activation windows for corporate sponsors. Pizza Pizza should consider real-time social content tied to the signing, limited-time promotional offers referencing the player\'s number, and push notifications to loyalty app users in the GTA.' },
-    { titleTemplate: () => 'PWHL Toronto Announces Community Arena Tour — Grassroots Fan Events Across Ontario This Summer', tags: ['sponsorships'], urgency: 'medium', summary: 'PWHL Toronto has announced a summer community arena tour visiting 12 Ontario cities, featuring player appearances, youth clinics, and fan activations. The tour is designed to build grassroots support and expand the league\'s fanbase beyond downtown Toronto into suburban and regional markets.', whyItMatters: 'The community tour aligns perfectly with Pizza Pizza\'s Ontario footprint. Co-branded activations at each stop — sampling, app download incentives, and social content — would extend the sponsorship\'s reach into markets where Pizza Pizza is actively expanding.' },
-    { titleTemplate: () => 'BC Lions and CFL Announce Expanded Grey Cup Week Programming — Week-Long Fan Festival Planned', tags: ['sponsorships'], urgency: 'medium', summary: 'The CFL has announced expanded Grey Cup Week programming with a week-long fan festival in the host city. The BC Lions are expected to be contenders, and early projections show record attendance and media coverage for the event. Corporate sponsors will have expanded activation opportunities across the festival grounds.', whyItMatters: 'Grey Cup Week is the CFL\'s marquee event and the highest-visibility moment for Pizza Pizza\'s league sponsorship. Early planning for on-site activations, delivery promotions in the host city, and co-branded content will maximise ROI from the expanded festival format.' },
+    { titleTemplate: () => 'RBC Foundation Announces $50M Community Impact Fund — Supporting Financial Literacy Across Canada', tags: ['sponsorships'], urgency: 'medium',
+      summary: 'The RBC Foundation has announced a $50M community impact fund focused on financial literacy programs across Canada. The fund will support financial education in schools, newcomer financial integration programs, and small business mentorship. The announcement received positive media coverage and strong social media engagement.',
+      whyItMatters: 'Community investment in financial literacy creates long-term brand affinity and customer pipeline. The announcement provides authentic content for brand campaigns and demonstrates RBC\'s commitment to financial inclusion — messaging that resonates strongly with younger demographics.' },
+    { titleTemplate: () => 'Team RBC Golfer Wins First Major — Social Media Celebration Generates $18M in Brand Value for RBC', tags: ['sponsorships'], urgency: 'high',
+      summary: 'A Team RBC golfer\'s first major championship victory generated an estimated $18M in brand value for RBC through broadcast logos, social media mentions, and post-victory interviews. RBC\'s congratulatory social content received 4.2M impressions and the brand was mentioned in 89% of media coverage of the victory.',
+      whyItMatters: 'Major championship wins create peak brand value moments that cannot be replicated through paid media. The $18M brand value equivalent from a single victory validates the Team RBC investment model — future athlete selection should prioritize competitiveness in major championships.' },
 
     // Competitors loop
-    { titleTemplate: () => 'Domino\'s Tests 15-Minute Delivery Guarantee in Toronto — Puts Pressure on Delivery Speed Standards', tags: ['competitors'], urgency: 'medium', competitor: 'Domino\'s', summary: 'Domino\'s is piloting a 15-minute delivery guarantee in select Toronto zones, offering a discount if the order arrives late. The test is supported by investment in delivery infrastructure and route optimisation technology. Industry analysts note this could reset consumer expectations for delivery speed across the QSR pizza category.', whyItMatters: 'If Domino\'s 15-minute guarantee gains traction, it raises the delivery speed bar for all competitors. Pizza Pizza should monitor customer feedback in overlapping zones and evaluate whether operational adjustments are needed to maintain its delivery speed advantage.' },
-    { titleTemplate: () => 'Pizza Nova Launches "Toppings Bar" Concept — In-Store Customisation Targeting Gen Z', tags: ['competitors'], urgency: 'medium', competitor: 'Pizza Nova', summary: 'Pizza Nova has launched a "Toppings Bar" concept in select GTA locations, allowing customers to build custom pizzas from a visible fresh-ingredient display. The concept is designed to appeal to Gen Z\'s desire for customisation and transparency, with social media content showing the build process generating strong engagement.', whyItMatters: 'Pizza Nova\'s Toppings Bar targets the customisation and transparency trends that resonate with younger consumers. Pizza Pizza should assess whether this experience-driven concept is shifting foot traffic or brand perception among the Gen Z segment in overlapping markets.' },
-    { titleTemplate: () => 'Pizza Hut Partners with DoorDash for Exclusive Bundle Deals — Platform-First Strategy Intensifies', tags: ['competitors'], urgency: 'medium', competitor: 'Pizza Hut', summary: 'Pizza Hut has announced an exclusive partnership with DoorDash offering bundle deals available only through the platform, including family meal combos at 20% below in-store pricing. The strategy prioritises delivery platform visibility over direct ordering, a sharp contrast to competitors investing in first-party apps.', whyItMatters: 'Pizza Hut\'s platform-first strategy is the opposite of Pizza Pizza\'s direct-ordering approach. While it may drive short-term volume, the 25-30% commission structure erodes margins. This validates Pizza Pizza\'s investment in the loyalty app and direct ordering — worth emphasising in marketing to value-conscious consumers.' },
+    { titleTemplate: () => 'CIBC Launches AI-Powered Financial Planning Tool — First Big Five Bank to Offer Automated Advice', tags: ['competitors'], urgency: 'medium', competitor: 'CIBC',
+      summary: 'CIBC has launched an AI-powered financial planning tool that provides automated investment advice, retirement projections, and tax optimization strategies. The tool is available free to all CIBC clients and is being positioned as a bridge between self-directed investing and full-service advisory.',
+      whyItMatters: 'CIBC\'s AI advisory tool sets a new bar for digital financial planning. If adoption is strong, other Big Five banks including RBC will face pressure to offer similar capabilities. Monitor CIBC\'s user adoption metrics and client satisfaction data for competitive intelligence.' },
+    { titleTemplate: () => 'National Bank Acquires Fintech Lender — Signals Consolidation Trend Between Banks and Fintechs', tags: ['competitors'], urgency: 'medium', competitor: 'National Bank',
+      summary: 'National Bank has acquired a Canadian fintech lending platform, signalling a growing trend of traditional banks acquiring fintech capabilities rather than building them internally. The acquisition gives National Bank instant access to the fintech\'s digital origination platform and 200K customer base.',
+      whyItMatters: 'Bank-fintech consolidation is accelerating. RBC should evaluate whether strategic fintech acquisitions could accelerate digital product development faster than internal build — particularly in areas where fintech user experience leads traditional banking.' },
+    { titleTemplate: () => 'TD Launches Cross-Border Banking Package — Targeting Canadian Snowbirds and US-Connected Customers', tags: ['competitors'], urgency: 'medium', competitor: 'TD',
+      summary: 'TD has launched an integrated cross-border banking package targeting Canadian snowbirds and US-connected customers, offering seamless CAD-USD account management, competitive exchange rates, and unified digital banking across both countries. The package leverages TD\'s unique position as a major bank in both markets.',
+      whyItMatters: 'TD\'s cross-border proposition exploits a structural advantage RBC cannot easily replicate. RBC should monitor whether cross-border features become a meaningful driver of customer acquisition and consider partnerships that enhance its own cross-border capabilities.' },
 
     // Macro loop
-    { titleTemplate: () => 'Holiday Spending Forecast Cautious — Canadians Plan to Spend 8% Less on Dining Out', tags: ['macro'], urgency: 'high', summary: 'Early holiday spending forecasts show Canadian consumers planning to reduce dining-out spending by 8% compared to last year. However, spending on "convenient" and "value" food options is expected to hold steady, suggesting a trade-down from full-service restaurants rather than across-the-board cuts.', whyItMatters: 'A value-seeking environment favours Pizza Pizza over premium dining competitors. Marketing should emphasize value, convenience, and family-friendly pricing rather than competing on premium experiences.' },
-    { titleTemplate: () => 'Inflation Sensitivity Rises for Food-Away-From-Home — But QSR Pizza Spending Remains Resilient', tags: ['macro'], urgency: 'medium', summary: 'Statistics Canada data shows rising inflation sensitivity across food-away-from-home categories, but QSR pizza spending has remained resilient, declining only 2% compared to 8-12% drops in casual dining and fine dining. Pizza appears to benefit from its positioning as affordable comfort food.', whyItMatters: 'QSR pizza spending resilience is Pizza Pizza\'s anchor in a challenging environment. The "affordable comfort food" positioning should be emphasized in marketing — pizza as everyday value, especially relative to other dining categories.' },
-    { titleTemplate: () => 'Canadian Convenience Expectations Rise — 82% of QSR Customers Expect Sub-30-Minute Delivery', tags: ['macro'], urgency: 'medium', summary: 'A Deloitte Canada study finds 82% of Canadian QSR customers now expect sub-30-minute delivery, up from 64% two years ago. Chains without competitive delivery speed are losing share to faster competitors and aggregator platforms.', whyItMatters: 'Rising delivery speed expectations put pressure on all QSR operators. Pizza Pizza\'s own delivery fleet and established delivery infrastructure are competitive advantages — marketing should frame speed as a core brand promise.' },
+    { titleTemplate: () => 'Canadian Housing Market Shows Signs of Stabilization — Spring Listings Up 22% Year-Over-Year', tags: ['macro'], urgency: 'medium',
+      summary: 'Canadian housing market data shows stabilization with spring listings up 22% year-over-year and price growth moderating to 3-5% annually. First-time buyer activity is increasing in suburban markets as affordability improves relative to peak 2022-2023 levels. Mortgage origination volume is expected to increase significantly in spring 2026.',
+      whyItMatters: 'Housing stabilization is a green light for mortgage marketing acceleration. RBC should increase mortgage campaign spend heading into spring — first-time buyer activity increasing in suburban markets aligns perfectly with the First-Time Home Buyer campaign targeting.' },
+    { titleTemplate: () => 'Canadian Employment Rate Holds Steady at 61.5% — Tech Sector Layoffs Offset by Services Growth', tags: ['macro'], urgency: 'medium',
+      summary: 'Statistics Canada reports the employment rate holding steady at 61.5%, with tech sector layoffs offset by growth in healthcare, professional services, and construction. The stable employment picture supports consumer confidence and financial product demand, though income growth remains below inflation in several sectors.',
+      whyItMatters: 'Stable employment supports overall financial product demand but uneven income growth means messaging must be nuanced. Value-focused positioning resonates across segments while premium messaging should be targeted to growing income cohorts.' },
+    { titleTemplate: () => 'Canadian Consumer Savings Rate Rises to 6.2% — Highest Level Since 2021 as Canadians Build Financial Buffers', tags: ['macro'], urgency: 'medium',
+      summary: 'The Canadian consumer savings rate has risen to 6.2%, the highest since 2021, as households prioritize financial resilience. The trend is driving demand for high-yield savings accounts, GICs, and investment products. Financial advisors report increased client interest in emergency fund planning and retirement contributions.',
+      whyItMatters: 'Rising savings rates create direct demand for RBC\'s savings and investment products. GIC, TFSA, and RRSP campaigns should emphasize building financial security — messaging aligned with consumer behaviour trends will outperform aspirational wealth-building narratives in this environment.' },
   ];
 
-  // First 21 templates are pinned (3 per category x 7 categories), rest are loop templates
-  const pinnedTemplates = templates.slice(0, 21);
-  const loopTemplates = templates.slice(21);
+  // First 27 templates are pinned (3 per category x 9 categories), rest are loop templates
+  const pinnedTemplates = templates.slice(0, 27);
+  const loopTemplates = templates.slice(27);
 
-  const categoryTags: NewsTag[] = ['brand', 'qsr', 'menu', 'delivery', 'social', 'sports', 'sponsorships', 'competitors', 'macro'];
+  const categoryTags: NewsTag[] = ['brand', 'banking', 'credit-cards', 'fintech', 'social', 'sports', 'sponsorships', 'competitors', 'macro'];
   const categorySources: Record<string, string[][]> = {
-    brand: [['Retail Insider', 'Financial Post', 'Strategy Online']],
-    qsr: [['QSR Magazine', 'Technomic', 'Restaurants Canada']],
-    menu: [['Technomic', 'QSR Magazine', 'Food in Canada']],
-    delivery: [['UberEats Data', 'DoorDash Insights', 'SkipTheDishes Analytics']],
-    social: [['Reddit r/pizza', 'Reddit r/foodToronto', 'TikTok #FoodTok']],
-    sports: [['TSN', 'Sportsnet', 'Strategy Online']],
-    sponsorships: [['TSN', 'Sportsnet', 'The Athletic']],
-    competitors: [['Retail Insider', 'QSR Magazine', 'RedFlagDeals']],
-    macro: [['Statistics Canada', 'The Globe and Mail', 'Deloitte Canada']],
+    brand: [['Financial Post', 'The Globe and Mail', 'Bloomberg']],
+    banking: [['OSFI Bulletin', 'Financial Post', 'The Globe and Mail']],
+    'credit-cards': [['Financial Post', 'Ratehub.ca', 'MoneySense']],
+    fintech: [['BetaKit', 'TechCrunch', 'Financial Post']],
+    social: [['Reddit r/PersonalFinanceCanada', 'TikTok #FinTok', 'Reddit r/churningcanada']],
+    sports: [['TSN', 'Sportsnet', 'Golf Digest']],
+    sponsorships: [['TSN', 'Golf Digest', 'Strategy Online']],
+    competitors: [['Financial Post', 'The Globe and Mail', 'Ratehub.ca']],
+    macro: [['Statistics Canada', 'Bank of Canada', 'The Globe and Mail']],
   };
 
   // Generate pinned articles (3 per category)
@@ -490,7 +602,7 @@ function generateNews(): NewsItem[] {
         source: sources[idx % sources.length],
         date: format(subDays(END_DATE, catIdx + idx), 'yyyy-MM-dd'),
         tags: tmpl.tags,
-        regions: ['north-america'] as RegionId[],
+        regions: ['national'] as GeoId[],
         urgency: tmpl.urgency,
         summary: tmpl.summary,
         whyItMatters: tmpl.whyItMatters,
@@ -506,7 +618,7 @@ function generateNews(): NewsItem[] {
     const daysAgo = randInt(0, 89);
     const date = format(subDays(END_DATE, daysAgo), 'yyyy-MM-dd');
     const sources = NEWS_SOURCES_BY_TAG[tag] || ['The Globe and Mail'];
-    const regions = pickN(ALL_REGIONS, randInt(1, 3));
+    const geos = pickN(ALL_GEOS, randInt(1, 3));
 
     items.push({
       id: `news-loop-${i}`,
@@ -514,7 +626,7 @@ function generateNews(): NewsItem[] {
       source: pick(sources),
       date,
       tags: template.tags,
-      regions: regions,
+      regions: geos,
       urgency: template.urgency,
       summary: template.summary,
       whyItMatters: template.whyItMatters,
@@ -584,14 +696,15 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: today,
       scope: 'campaign',
       category: 'performance',
-      region: 'north-america',
-      campaign: 'pp-loyalty-app',
-      channels: ['instagram', 'facebook', 'tiktok'],
+      division: 'pcb',
+      productLine: 'avion',
+      campaign: 'rbc-avion-travel-q1',
+      channels: ['instagram', 'facebook', 'ctv'],
       title: 'Pacing to Underspend',
       recommendedAction: 'Increase daily budget or expand targeting to hit flight budget',
-      summary: 'Loyalty App Acquisition daily spend rate projects a $38K underspend by flight end. Expanding app-install lookalike audiences or increasing bid caps will close the gap before the spring app acquisition push.',
-      evidence: ['Projected spend: $6.38M of $6.42M budget', 'Daily run rate $2.1K below target', '18 days remaining in flight'],
-      impactEstimate: '+$38K utilization',
+      summary: 'Avion Travel Q1 daily spend rate projects a $52K underspend by flight end. Expanding travel-intent lookalike audiences or increasing bid caps on CTV will close the gap before the Q1 awareness push concludes.',
+      evidence: ['Projected spend: $3.148M of $3.2M budget', 'Daily run rate $2.8K below target', '18 days remaining in flight'],
+      impactEstimate: '+$52K utilization',
       confidence: 88,
       status: 'new',
       actionSteps: generateActionSteps('performance', 0),
@@ -601,31 +714,51 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: twoDaysAgo,
       scope: 'campaign',
       category: 'performance',
-      region: 'north-america',
-      campaign: 'pp-game-day',
-      channels: ['google-search', 'instagram'],
+      division: 'pcb',
+      productLine: 'mortgage',
+      campaign: 'rbc-mortgage-spring',
+      channels: ['google-search', 'instagram', 'facebook'],
       title: 'CPA Trending Above Target',
       recommendedAction: 'Tighten targeting or reduce bid caps on broad search terms',
-      summary: 'Game Day & Sports Moments cost per conversion has risen 18% above target. Generic pizza search terms are driving inefficiency compared to branded Pizza Pizza queries.',
-      evidence: ['Current CPA $53 vs $45 target', 'Generic terms CPA is 2.1x branded CPA', 'Bid cap exceeded on 3 ad groups'],
-      impactEstimate: '-$8K efficiency',
+      summary: 'Spring Mortgage Rates cost per acquisition has risen 18% above target. Generic "mortgage rates" search terms are driving inefficiency compared to branded "RBC mortgage" queries, with non-branded CPA 2.1x higher.',
+      evidence: ['Current CPA $185 vs $155 target', 'Generic terms CPA is 2.1x branded CPA', 'Bid cap exceeded on 3 ad groups'],
+      impactEstimate: '-$30K efficiency',
       confidence: 79,
       status: 'new',
       actionSteps: generateActionSteps('performance', 2),
     },
+    {
+      id: 'insight-ion-awareness',
+      createdAt: yesterday,
+      scope: 'campaign',
+      category: 'performance',
+      division: 'pcb',
+      productLine: 'ion',
+      campaign: 'rbc-ion-launch',
+      channels: ['tiktok', 'instagram', 'facebook', 'spotify'],
+      title: 'Exceeding Awareness Benchmarks',
+      recommendedAction: 'Consider shifting budget to conversion objective to capitalize on strong awareness',
+      summary: 'ION Card Digital Launch is exceeding awareness benchmarks by 34%, with brand recall and consideration metrics significantly above industry norms for card launches. The campaign has built sufficient awareness to support a shift toward conversion-focused creative and targeting.',
+      evidence: ['Reach exceeding target by 34%', 'Brand recall lift: 22% (benchmark: 15%)', 'Consideration intent: 2.8x above pre-campaign baseline'],
+      impactEstimate: '+$85K conversion potential',
+      confidence: 82,
+      status: 'new',
+      actionSteps: generateActionSteps('performance', 1),
+    },
 
-    // ── CROSS CHANNEL group (scope=brand|region, category≠creative) ──
+    // ── CROSS CHANNEL group (scope=brand|division, category≠creative) ──
     {
       id: 'insight-channel-mix',
       createdAt: today,
-      scope: 'brand',
+      scope: 'division',
       category: 'performance',
-      channels: ['instagram', 'google-search', 'facebook'],
+      division: 'wealth',
+      channels: ['linkedin', 'google-search'],
       title: 'Channel Mix Imbalance',
-      recommendedAction: 'Shift budget from saturated social to high-intent search',
-      summary: 'Instagram is receiving 40% of total budget but generating only 18% of conversions. Google Search shows 3.2x higher ROAS with room to scale for delivery and pickup orders.',
-      evidence: ['Instagram ROAS: 1.2x vs Google Search ROAS: 3.8x', '40% budget → 18% conversions on Instagram', 'Google Search impression share only 62%'],
-      impactEstimate: '+$28K rev potential',
+      recommendedAction: 'Shift budget from LinkedIn to Google Search for wealth management campaigns',
+      summary: 'LinkedIn is receiving 25% of wealth management budget but generating only 8% of conversions. Google Search shows 3.8x higher ROAS with significant room to scale — impression share is only 58% on key wealth management keywords.',
+      evidence: ['LinkedIn ROAS: 1.1x vs Google Search ROAS: 4.2x', '25% budget → 8% conversions on LinkedIn', 'Google Search impression share only 58%'],
+      impactEstimate: '+$42K rev potential',
       confidence: 91,
       status: 'new',
       actionSteps: generateActionSteps('performance', 3),
@@ -633,15 +766,14 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
     {
       id: 'insight-meta-diminishing',
       createdAt: yesterday,
-      scope: 'region',
+      scope: 'brand',
       category: 'platform',
-      region: 'north-america',
       channels: ['facebook', 'google-search'],
       title: 'Diminishing Returns on Meta',
       recommendedAction: 'Reallocate excess Facebook spend to Google Search',
-      summary: 'Incremental CPA on Facebook has risen 35% as audience overlap between ad sets reaches 45%. Moving $5K weekly to Search would improve blended efficiency heading into the spring ordering season.',
-      evidence: ['Facebook incremental CPA up 35% MoM', 'Audience overlap at 45% across 4 ad sets', 'Google Search has 38% headroom on impression share'],
-      impactEstimate: '-$4.2K CPA savings',
+      summary: 'Incremental CPA on Facebook has risen 35% as audience overlap between credit card ad sets reaches 45%. Moving $8K weekly to Search would improve blended efficiency across Avion and ION campaigns heading into TFSA season.',
+      evidence: ['Facebook incremental CPA up 35% MoM', 'Audience overlap at 45% across 4 credit card ad sets', 'Google Search has 42% headroom on impression share'],
+      impactEstimate: '-$6.5K CPA savings',
       confidence: 85,
       status: 'new',
       actionSteps: generateActionSteps('platform', 4),
@@ -651,15 +783,45 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: twoDaysAgo,
       scope: 'brand',
       category: 'performance',
-      channels: ['instagram', 'facebook', 'tiktok', 'ttd'],
+      channels: ['instagram', 'facebook', 'tiktok', 'ttd', 'ctv'],
       title: 'Cross-Channel Frequency Cap',
       recommendedAction: 'Cap combined exposure to reduce ad fatigue',
-      summary: 'Users are seeing Pizza Pizza ads an average of 12.4 times per week across channels, well above the 8x optimal threshold. Excess frequency is driving CPM inflation without conversion lift.',
-      evidence: ['Average weekly frequency: 12.4x (target: 8x)', 'CTR drops 40% after 9th impression', 'Estimated waste: $6K/week in excess impressions'],
-      impactEstimate: '-$6K waste/wk',
+      summary: 'Users are seeing RBC ads an average of 14.2 times per week across channels, well above the 8x optimal threshold. Excess frequency is driving CPM inflation without conversion lift, particularly among the young-professionals audience segment.',
+      evidence: ['Average weekly frequency: 14.2x (target: 8x)', 'CTR drops 40% after 9th impression', 'Estimated waste: $12K/week in excess impressions'],
+      impactEstimate: '-$12K waste/wk',
       confidence: 87,
       status: 'new',
       actionSteps: generateActionSteps('performance', 5),
+    },
+    {
+      id: 'insight-channel-saturation',
+      createdAt: today,
+      scope: 'brand',
+      category: 'performance',
+      channels: ['instagram', 'tiktok'],
+      title: 'Channel Saturation Detected',
+      recommendedAction: 'Reduce Instagram spend on ION card campaigns and reallocate to emerging channels',
+      summary: 'Instagram performance is declining as frequency climbs for ION card campaigns. The channel has reached its saturation point in the 18-34 demographic. Reallocating budget to channels with lower marginal costs will improve overall portfolio efficiency.',
+      evidence: ['Frequency up 40% while CTR down 25%', 'Diminishing returns threshold exceeded', 'TikTok and Spotify showing significant headroom'],
+      impactEstimate: '+$15K efficiency',
+      confidence: 88,
+      status: 'new',
+      actionSteps: generateActionSteps('performance', 12),
+    },
+    {
+      id: 'insight-channel-divergence',
+      createdAt: yesterday,
+      scope: 'brand',
+      category: 'performance',
+      channels: ['tiktok', 'instagram'],
+      title: 'Channel Performance Divergence',
+      recommendedAction: 'Reallocate spend from Instagram to TikTok for student-focused campaigns',
+      summary: 'TikTok ROAS for student campaigns is up 28% while Instagram is declining 12% over the same period. This shift — likely driven by the 18-24 demographic\'s platform preference — presents an opportunity to reallocate spend toward TikTok to protect overall efficiency.',
+      evidence: ['TikTok ROAS up 28% vs Instagram down 12%', 'Student audience engagement shifting to TikTok', 'TikTok algorithm favouring short-form financial education content'],
+      impactEstimate: '+$22K optimization',
+      confidence: 85,
+      status: 'new',
+      actionSteps: generateActionSteps('performance', 14),
     },
 
     // ── AD group (category=creative) ──
@@ -668,14 +830,15 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: today,
       scope: 'campaign',
       category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-tiktok-foodies',
-      channels: ['instagram', 'tiktok'],
+      division: 'pcb',
+      productLine: 'ion',
+      campaign: 'rbc-ion-launch',
+      channels: ['tiktok', 'instagram', 'facebook'],
       title: 'Possible Creative Fatigue',
-      recommendedAction: 'Refresh TikTok Foodies creative with new food content and UGC-style variants',
-      summary: 'Primary TikTok Foodies creative has been running for 21 days with CTR declining steadily. Frequency has reached 6.8x in the core 18-34 foodie audience, indicating ad fatigue.',
-      evidence: ['CTR declined 28% over 14 days', 'Frequency reached 6.8x in primary audience', 'Creative fatigue index: 72/100'],
-      impactEstimate: '+18% CTR recovery',
+      recommendedAction: 'Refresh ION Launch TikTok creative with new UGC-style content and influencer variants',
+      summary: 'ION Launch primary TikTok creative has been running for 21 days with CTR declining 32% over the last 14 days. Frequency has reached 7.2x in the core 18-34 audience, indicating significant ad fatigue in the young-professionals segment.',
+      evidence: ['CTR declined 32% over 14 days', 'Frequency reached 7.2x in primary audience', 'Creative fatigue index: 78/100'],
+      impactEstimate: '+22% CTR recovery',
       confidence: 84,
       status: 'new',
       actionSteps: generateActionSteps('creative', 6),
@@ -685,13 +848,14 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: yesterday,
       scope: 'campaign',
       category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-loyalty-app',
-      channels: ['instagram', 'tiktok'],
+      division: 'pcb',
+      productLine: 'avion',
+      campaign: 'rbc-avion-retention',
+      channels: ['instagram', 'facebook'],
       title: 'Possible Creative Fatigue',
-      recommendedAction: 'Pause spend on underperforming ad',
-      summary: 'Loyalty app download promo video has reached saturation with completion rates dropping below 15%. The Pizza Pizza Club value audience has been heavily exposed over the past 3 weeks.',
-      evidence: ['Video completion rate dropped from 28% to 14%', 'Frequency: 5.4x in lookalike audience', 'CPA increased 32% for this creative'],
+      recommendedAction: 'Pause spend on underperforming loyalty video creative',
+      summary: 'Avion Retention loyalty video has reached saturation with completion rates dropping below 15%. The cardholder audience has been heavily exposed over the past 3 weeks, reducing the video\'s effectiveness at driving retention engagement.',
+      evidence: ['Video completion rate dropped from 28% to 14%', 'Frequency: 6.1x in cardholder audience', 'CPA increased 38% for this creative'],
       impactEstimate: '+22% VCR recovery',
       confidence: 78,
       status: 'new',
@@ -702,14 +866,15 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: twoDaysAgo,
       scope: 'campaign',
       category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-family-deals',
-      channels: ['instagram', 'tiktok'],
+      division: 'pcb',
+      productLine: 'mortgage',
+      campaign: 'rbc-mortgage-spring',
+      channels: ['instagram', 'facebook'],
       title: 'Possible Creative Fatigue',
-      recommendedAction: 'Pause spend on underperforming ad',
-      summary: 'Family meal deal carousel in Family Meal Deals campaign shows declining engagement. Swipe rate has halved while CPC has doubled, suggesting creative exhaustion.',
-      evidence: ['Swipe rate dropped 52% in 10 days', 'CPC increased from $1.20 to $2.45', 'Engagement rate: 1.1% (was 2.8%)'],
-      impactEstimate: '+$2.1K efficiency',
+      recommendedAction: 'Replace or refresh declining carousel creative',
+      summary: 'Mortgage Spring Rates carousel creative shows declining engagement. Swipe rate has halved while CPC has doubled over the past 10 days, suggesting creative exhaustion among the family and young-professional audiences.',
+      evidence: ['Swipe rate dropped 52% in 10 days', 'CPC increased from $2.40 to $4.85', 'Engagement rate: 1.1% (was 2.8%)'],
+      impactEstimate: '+$4.2K efficiency',
       confidence: 81,
       status: 'new',
       actionSteps: generateActionSteps('creative', 8),
@@ -719,14 +884,15 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: today,
       scope: 'campaign',
       category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-loyalty-app',
-      channels: ['tiktok', 'instagram'],
+      division: 'wealth',
+      productLine: 'direct-investing',
+      campaign: 'rbc-di-tfsa',
+      channels: ['instagram', 'facebook', 'tiktok'],
       title: 'Top Performer Ready to Scale',
       recommendedAction: 'Increase budget allocation to top creative',
-      summary: 'New UGC-style Pizza Pizza Club member testimonial video is outperforming all other creatives by 2.4x on ROAS. Currently capped at 15% of ad set budget — scaling to 35% is projected to improve overall campaign ROAS.',
-      evidence: ['Creative ROAS: 4.8x vs campaign avg 2.0x', 'Only receiving 15% of ad set budget', 'No fatigue signals after 12 days'],
-      impactEstimate: '+$18K rev potential',
+      summary: 'New UGC-style TFSA explainer video is outperforming all other creatives by 2.8x on ROAS. Currently capped at 12% of ad set budget — scaling to 30% is projected to significantly improve overall campaign ROAS during peak TFSA contribution season.',
+      evidence: ['Creative ROAS: 5.2x vs campaign avg 1.9x', 'Only receiving 12% of ad set budget', 'No fatigue signals after 14 days'],
+      impactEstimate: '+$28K rev potential',
       confidence: 92,
       status: 'new',
       actionSteps: generateActionSteps('creative', 9),
@@ -736,98 +902,52 @@ function generateInsights(_anomalies: Anomaly[]): Insight[] {
       createdAt: yesterday,
       scope: 'campaign',
       category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-new-menu',
+      division: 'pcb',
+      productLine: 'newcomer',
+      campaign: 'rbc-newcomer-welcome',
       channels: ['facebook', 'instagram'],
       title: 'Low Engagement Variant',
       recommendedAction: 'Replace or refresh underperforming creative',
-      summary: 'Static new menu item image variant C has the lowest engagement rate across all active creatives at 0.8%. Budget is being wasted on an asset that fails to capture attention in the New Menu Launch campaign.',
-      evidence: ['Engagement rate: 0.8% (campaign avg: 2.3%)', 'CTR: 0.4% vs 1.2% campaign average', 'Zero conversions attributed in last 7 days'],
+      summary: 'Static "Welcome to Canada" image variant C has the lowest engagement rate across all active creatives at 0.6%. Budget is being wasted on an asset that fails to capture attention — zero conversions attributed in the last 7 days.',
+      evidence: ['Engagement rate: 0.6% (campaign avg: 2.1%)', 'CTR: 0.3% vs 1.1% campaign average', 'Zero conversions attributed in last 7 days'],
       impactEstimate: '+$3.5K reallocation',
       confidence: 90,
       status: 'new',
       actionSteps: generateActionSteps('creative', 10),
     },
 
-    // ── Additional AD insights ──
-    {
-      id: 'insight-hook-retention',
-      createdAt: today,
-      scope: 'campaign',
-      category: 'creative',
-      region: 'north-america',
-      campaign: 'pp-loyalty-app',
-      channels: ['instagram', 'tiktok'],
-      title: 'Low Early Hook Retention',
-      recommendedAction: 'Pause spend on underperforming ad',
-      summary: "Your 1-3 second view rate is declining, leading to early abandonment. This significantly lowers the algorithm's efficiency and increases your cost per result. Reduce delivery and test new hook variants or alternative opening sequences.",
-      evidence: ['3s view rate dropped from 45% to 28% over 10 days', 'Cost per result increased 34%', 'Algorithm efficiency score declining steadily'],
-      impactEstimate: '+32% view rate recovery',
-      confidence: 86,
-      status: 'new',
-      actionSteps: generateActionSteps('creative', 11),
-    },
-
-    // ── Additional CROSS CHANNEL insights ──
-    {
-      id: 'insight-channel-saturation',
-      createdAt: today,
-      scope: 'brand',
-      category: 'performance',
-      channels: ['instagram', 'tiktok'],
-      title: 'Channel Saturation Detected',
-      recommendedAction: 'Reallocate spend from Bowls product line',
-      summary: 'Performance is declining as frequency climbs, indicating this channel has reached its saturation point. Reallocating budget to channels with lower marginal costs will improve your overall portfolio efficiency.',
-      evidence: ['Frequency up 40% while CTR down 25%', 'Diminishing returns threshold exceeded', 'Alternative channels showing significant headroom'],
-      impactEstimate: '+$15K efficiency',
-      confidence: 88,
-      status: 'new',
-      actionSteps: generateActionSteps('performance', 12),
-    },
-    {
-      id: 'insight-channel-dependence',
-      createdAt: yesterday,
-      scope: 'brand',
-      category: 'performance',
-      channels: ['instagram', 'tiktok', 'facebook'],
-      title: 'Excessive Channel Dependence',
-      recommendedAction: 'Diversify portfolio to reduce risk',
-      summary: "A single channel currently accounts for an unusually high percentage of your total spend while performance metrics are declining. This over-reliance creates account instability; redistributing funds to diversified channels with comparable potential will lower your overall risk.",
-      evidence: ['Single channel at 65% of total spend', 'Channel ROAS declining 18% MoM', 'Portfolio risk score: High'],
-      impactEstimate: '-$12K risk reduction',
-      confidence: 83,
-      status: 'new',
-      actionSteps: generateActionSteps('performance', 13),
-    },
-    {
-      id: 'insight-channel-divergence',
-      createdAt: yesterday,
-      scope: 'brand',
-      category: 'performance',
-      channels: ['instagram', 'tiktok'],
-      title: 'Channel Performance Divergence',
-      recommendedAction: 'Reallocate spend from influencer content',
-      summary: "One channel's performance is improving while another is declining over the same period. This shift \u2014 likely driven by consumer behaviour or algorithm changes \u2014 presents an opportunity to reallocate spend toward the improving channel to protect your overall efficiency.",
-      evidence: ['TikTok ROAS up 25% vs Instagram down 15%', 'Audience engagement shifting platforms', 'Algorithm favouring short-form content'],
-      impactEstimate: '+$22K optimization',
-      confidence: 85,
-      status: 'new',
-      actionSteps: generateActionSteps('performance', 14),
-    },
+    // ── Additional insights ──
     {
       id: 'insight-channel-opportunity',
       createdAt: twoDaysAgo,
-      scope: 'brand',
+      scope: 'division',
       category: 'performance',
-      channels: ['tiktok', 'instagram'],
+      division: 'capital-markets',
+      channels: ['linkedin', 'google-search'],
       title: 'New Channel Opportunity Detected',
-      recommendedAction: 'Reallocate spend to test potential on Bowls product line',
-      summary: 'This channel shows strong performance signals and low costs (CPM), but current spend remains low. Increasing the budget here while reducing your lowest-efficiency channels will test its full scaling potential.',
-      evidence: ['Channel CPM 40% below average', 'Early ROAS signals at 3.2x', 'Only 5% of total budget allocated'],
+      recommendedAction: 'Increase LinkedIn budget for commercial lending campaigns',
+      summary: 'LinkedIn is showing strong early signals for commercial lending but only receiving 5% of budget. Early ROAS at 3.2x significantly outperforms other channels for business-owner targeting. Increasing budget while reducing lowest-efficiency channels will test full scaling potential.',
+      evidence: ['LinkedIn CPM 40% below portfolio average for B2B', 'Early ROAS signals at 3.2x', 'Only 5% of commercial lending budget allocated'],
       impactEstimate: '+$18K scaling potential',
       confidence: 87,
       status: 'new',
       actionSteps: generateActionSteps('performance', 15),
+    },
+    {
+      id: 'insight-channel-dependence',
+      createdAt: yesterday,
+      scope: 'division',
+      category: 'performance',
+      division: 'wealth',
+      channels: ['linkedin', 'ctv', 'ooh'],
+      title: 'Excessive Channel Dependence',
+      recommendedAction: 'Diversify Dominion Securities media mix to reduce single-channel risk',
+      summary: 'A single channel currently accounts for 60% of total Dominion Securities spend while ROAS is declining. This over-reliance creates account instability — redistributing funds to diversified channels with comparable audience profiles will lower overall risk.',
+      evidence: ['Single channel at 60% of total spend', 'Channel ROAS declining 18% MoM', 'Portfolio risk score: High'],
+      impactEstimate: '-$12K risk reduction',
+      confidence: 83,
+      status: 'new',
+      actionSteps: generateActionSteps('performance', 13),
     },
   ];
 
@@ -851,11 +971,14 @@ export function generateAllData(): MockDataStore {
   const campaigns: Campaign[] = CAMPAIGN_DEFS.map(def => ({
     id: def.id,
     name: def.name,
-    region: def.region,
+    division: def.division,
+    agency: def.agency,
+    productLine: def.productLine,
+    audiences: def.audiences,
     objective: def.objective,
     status: def.status,
     channels: def.channels,
-    countries: def.countries,
+    geos: def.geos,
     startDate: format(START_DATE, 'yyyy-MM-dd'),
     plannedBudget: def.plannedBudget,
   }));

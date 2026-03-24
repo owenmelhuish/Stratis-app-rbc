@@ -11,7 +11,7 @@ import { DataTableWrapper, type Column } from '@/components/shared/data-table-wr
 import { ComparisonDelta } from '@/components/shared/comparison-delta';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { REGION_LABELS, KPI_CONFIGS, FUNNEL_HERO_KPIS, type KPIKey, type Campaign, type AggregatedKPIs } from '@/types';
+import { PRODUCT_LINE_LABELS, KPI_CONFIGS, FUNNEL_HERO_KPIS, type KPIKey, type Campaign, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
 import { ArrowRight, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
@@ -25,12 +25,12 @@ const HERO_COLORS: Record<string, string> = {
 
 interface CampaignRow { campaign: Campaign; kpis: AggregatedKPIs; previousKpis?: AggregatedKPIs; }
 
-export function RegionView() {
+export function ProductView() {
   const data = useDashboardData();
-  const { customKpis, selectedRegion, compareEnabled, selectedFunnel } = useAppStore();
+  const { customKpis, selectedProductLine, compareEnabled, selectedFunnel } = useAppStore();
   const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
   const drillToCampaign = useAppStore(s => s.drillToCampaign);
-  const regionLabel = selectedRegion ? REGION_LABELS[selectedRegion] : '';
+  const productLabel = selectedProductLine ? PRODUCT_LINE_LABELS[selectedProductLine] : '';
 
   const secondaryKpis = customKpis.filter(k => !heroKpis.includes(k));
 
@@ -63,7 +63,7 @@ export function RegionView() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{regionLabel} — Key Metrics</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{productLabel} — Key Metrics</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {heroKpis.map((key) => {
@@ -98,19 +98,19 @@ export function RegionView() {
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <div className="xl:col-span-3">
-          <TrendChart data={data.timeSeries} title={`${regionLabel} Performance Trend`} defaultMetrics={['spend', 'conversions', 'roas']} />
+          <TrendChart data={data.timeSeries} title={`${productLabel} Performance Trend`} defaultMetrics={['spend', 'conversions', 'roas']} />
         </div>
         <div className="xl:col-span-2">
-          <ChannelMixChart data={data.channelData} title={`${regionLabel} — Channel Mix`} />
+          <ChannelMixChart data={data.channelData} title={`${productLabel} — Channel Mix`} />
         </div>
       </div>
 
       <Card className="p-6 bg-card border-border/40">
-        <h3 className="text-sm font-semibold mb-4">Campaigns in {regionLabel}</h3>
+        <h3 className="text-sm font-semibold mb-4">Campaigns for {productLabel}</h3>
         <DataTableWrapper<CampaignRow>
           data={data.campaignData}
           columns={campaignColumns}
-          onRowClick={(row) => selectedRegion && drillToCampaign(selectedRegion, row.campaign.id)}
+          onRowClick={(row) => drillToCampaign(row.campaign.id)}
           searchable searchPlaceholder="Search campaigns..." searchKey={(row) => row.campaign.name}
         />
       </Card>
@@ -118,7 +118,7 @@ export function RegionView() {
       <Card className="p-6 bg-card border-border/40">
         <div className="flex items-center gap-2 mb-4">
           <Lightbulb className="h-4 w-4 text-orange" />
-          <h3 className="text-sm font-semibold">Top Insights for {regionLabel}</h3>
+          <h3 className="text-sm font-semibold">Top Insights for {productLabel}</h3>
         </div>
         <div className="space-y-2">
           {data.scopedInsights.slice(0, 5).map(insight => (
@@ -133,7 +133,7 @@ export function RegionView() {
               </div>
             </Link>
           ))}
-          {data.scopedInsights.length === 0 && <p className="text-xs text-muted-foreground">No insights for this region</p>}
+          {data.scopedInsights.length === 0 && <p className="text-xs text-muted-foreground">No insights for this product</p>}
         </div>
       </Card>
     </div>

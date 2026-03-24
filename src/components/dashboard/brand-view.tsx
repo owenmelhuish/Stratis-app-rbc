@@ -7,7 +7,7 @@ import { TrendChart } from '@/components/shared/trend-chart';
 import { ChannelMixChart } from '@/components/shared/channel-mix-chart';
 import { CampaignOverviewChart } from '@/components/shared/campaign-overview-chart';
 import { WorldMapChart } from '@/components/shared/world-map-chart';
-import { BentoKPIGrid } from '@/components/shared/bento-kpi-grid';
+import { FunnelVelocity, BudgetSankey, AudiencePortfolio, ChannelFrequency, AgencyBenchmarking, ConversionValue } from './widgets';
 import { DataTableWrapper, type Column } from '@/components/shared/data-table-wrapper';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Settings2, TrendingUp, TrendingDown, AlertTriangle, Zap, Target, DollarSign, BarChart3, Activity, Eye, ChevronLeft, ChevronRight, Image, Layers } from 'lucide-react';
-import { KPI_CONFIGS, CHANNEL_LABELS, FUNNEL_HERO_KPIS, type KPIKey, type ChannelId, type AggregatedKPIs } from '@/types';
+import { KPI_CONFIGS, CHANNEL_LABELS, DIVISION_LABELS, FUNNEL_HERO_KPIS, type KPIKey, type ChannelId, type DivisionId, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
+import { ComparisonDelta } from '@/components/shared/comparison-delta';
 
 const HERO_COLORS: Record<string, string> = {
   spend: '#e07060', cpm: '#6b8aad', roas: '#50b89a',
@@ -62,62 +63,62 @@ interface AdSet {
 
 const AD_SETS: AdSet[] = [
   {
-    id: 'as-gameday-carousel', name: 'Game Day Carousel — Instagram', campaignId: 'pp-game-day', campaignName: 'Game Day & Sports Moments',
-    channel: 'instagram', format: 'Carousel', asset: 'gameday-carousel-v3',
+    id: 'as-avion-travel-display', name: 'Avion Travel Rewards — Programmatic Display', campaignId: 'rbc-avion-travel-q1', campaignName: 'Avion Travel Q1',
+    channel: 'ttd', format: 'Display', asset: 'avion-travel-banner-300x250',
     kpis: { spend: 184200, impressions: 12400000, clicks: 248000, ctr: 2.0, conversions: 6820, cpa: 27.01, roas: 4.8, cpm: 14.85, creativeFatigue: 22 },
     kpiDeltas: { spend: 8, impressions: 12, clicks: 15, ctr: 6, conversions: 18, cpa: -10, roas: 14, cpm: -3, creativeFatigue: 4 },
   },
   {
-    id: 'as-tiktok-foodies-ugc', name: 'TikTok Foodies UGC — Short-Form Video', campaignId: 'pp-tiktok-foodies', campaignName: 'TikTok Foodies',
-    channel: 'tiktok', format: 'Short-Form Video', asset: 'foodies-ugc-creator-pack',
+    id: 'as-ion-launch-tiktok', name: 'ION Card Launch — TikTok UGC', campaignId: 'rbc-ion-launch', campaignName: 'ION Card Digital Launch',
+    channel: 'tiktok', format: 'Short-Form Video', asset: 'ion-ugc-creator-pack',
     kpis: { spend: 96800, impressions: 8900000, clicks: 356000, ctr: 4.0, conversions: 4120, cpa: 23.50, roas: 5.2, cpm: 10.88, creativeFatigue: 14 },
     kpiDeltas: { spend: 5, impressions: 22, clicks: 28, ctr: 8, conversions: 24, cpa: -15, roas: 22, cpm: -6, creativeFatigue: 2 },
   },
   {
-    id: 'as-app-download-search', name: 'App Download — Search Ads', campaignId: 'pp-loyalty-app', campaignName: 'Loyalty App Acquisition',
-    channel: 'google-search', format: 'Search', asset: 'loyalty-app-rsa-v2',
+    id: 'as-mortgage-search', name: 'Spring Mortgage — Search Ads', campaignId: 'rbc-mortgage-spring', campaignName: 'Spring Mortgage Rates',
+    channel: 'google-search', format: 'Search', asset: 'mortgage-rsa-v2',
     kpis: { spend: 142500, impressions: 3200000, clicks: 192000, ctr: 6.0, conversions: 11520, cpa: 12.37, roas: 8.1, cpm: 44.53, creativeFatigue: 8 },
     kpiDeltas: { spend: 3, impressions: 6, clicks: 9, ctr: 4, conversions: 12, cpa: -8, roas: 10, cpm: -2, creativeFatigue: 1 },
   },
   {
-    id: 'as-plant-based-reel', name: 'Plant-Based — Reels', campaignId: 'pp-plant-based', campaignName: 'Plant-Based & Better-For-You',
-    channel: 'instagram', format: 'Reels', asset: 'plant-based-reel-v1',
+    id: 'as-di-tfsa-reel', name: 'TFSA Season — Reels', campaignId: 'rbc-di-tfsa', campaignName: 'TFSA Season Push',
+    channel: 'instagram', format: 'Reels', asset: 'tfsa-explainer-reel-v1',
     kpis: { spend: 68400, impressions: 5600000, clicks: 196000, ctr: 3.5, conversions: 2940, cpa: 23.27, roas: 3.9, cpm: 12.21, creativeFatigue: 38 },
     kpiDeltas: { spend: 12, impressions: 8, clicks: 4, ctr: -3, conversions: 2, cpa: 6, roas: -4, cpm: 5, creativeFatigue: 12 },
   },
   {
-    id: 'as-family-deals-ctv', name: 'Family Meal Deals — CTV Spot', campaignId: 'pp-family-deals', campaignName: 'Family Meal Deals',
-    channel: 'ctv', format: 'CTV :30', asset: 'family-deals-ctv-30s',
+    id: 'as-gameday-ctv', name: 'Game Day Moments — CTV Spot', campaignId: 'rbc-gameday-moments', campaignName: 'Game Day Moments',
+    channel: 'ctv', format: 'CTV :30', asset: 'gameday-ctv-30s',
     kpis: { spend: 210000, impressions: 4800000, clicks: 48000, ctr: 1.0, conversions: 3360, cpa: 62.50, roas: 2.1, cpm: 43.75, creativeFatigue: 18 },
     kpiDeltas: { spend: 6, impressions: 10, clicks: 8, ctr: -1, conversions: 5, cpa: 2, roas: -2, cpm: -3, creativeFatigue: 3 },
   },
   {
-    id: 'as-new-menu-display', name: 'New Menu Launch — Programmatic Display', campaignId: 'pp-new-menu', campaignName: 'New Menu Launch',
-    channel: 'ttd', format: 'Display', asset: 'new-menu-banner-300x250',
+    id: 'as-rewards-awareness-spotify', name: 'RBC Rewards — Spotify Audio', campaignId: 'rbc-rewards-awareness', campaignName: 'RBC Rewards Brand Awareness',
+    channel: 'spotify', format: 'Audio Ad', asset: 'rewards-audio-30s',
     kpis: { spend: 78600, impressions: 9200000, clicks: 138000, ctr: 1.5, conversions: 1932, cpa: 40.68, roas: 2.4, cpm: 8.54, creativeFatigue: 42 },
     kpiDeltas: { spend: 4, impressions: -2, clicks: -6, ctr: -4, conversions: -8, cpa: 12, roas: -10, cpm: 6, creativeFatigue: 16 },
   },
   {
-    id: 'as-late-night-fb', name: 'Late Night Cravings — Lead Gen', campaignId: 'pp-late-night', campaignName: 'Late Night Cravings',
-    channel: 'facebook', format: 'Lead Form', asset: 'late-night-leadgen-v4',
+    id: 'as-newcomer-fb', name: 'Welcome to Canada — Lead Gen', campaignId: 'rbc-newcomer-welcome', campaignName: 'Welcome to Canada',
+    channel: 'facebook', format: 'Lead Form', asset: 'newcomer-leadgen-v4',
     kpis: { spend: 54300, impressions: 3100000, clicks: 124000, ctr: 4.0, conversions: 3720, cpa: 14.60, roas: 6.8, cpm: 17.52, creativeFatigue: 10 },
     kpiDeltas: { spend: 2, impressions: 4, clicks: 7, ctr: 3, conversions: 9, cpa: -6, roas: 8, cpm: -1, creativeFatigue: -2 },
   },
   {
-    id: 'as-loyalty-retain-retarget', name: 'Loyalty Retention — Retargeting', campaignId: 'pp-loyalty-retain', campaignName: 'Loyalty Retention & Upsell',
-    channel: 'facebook', format: 'Dynamic Retargeting', asset: 'loyalty-dpa-catalogue',
+    id: 'as-avion-retention-retarget', name: 'Avion Retention — Retargeting', campaignId: 'rbc-avion-retention', campaignName: 'Avion Cardholder Retention',
+    channel: 'facebook', format: 'Dynamic Retargeting', asset: 'avion-dpa-catalogue',
     kpis: { spend: 62100, impressions: 2800000, clicks: 112000, ctr: 4.0, conversions: 5600, cpa: 11.09, roas: 9.2, cpm: 22.18, creativeFatigue: 6 },
     kpiDeltas: { spend: 1, impressions: 3, clicks: 5, ctr: 2, conversions: 7, cpa: -5, roas: 6, cpm: -2, creativeFatigue: -1 },
   },
   {
-    id: 'as-catering-tiktok', name: 'Catering & Group Orders — TikTok Spark', campaignId: 'pp-catering', campaignName: 'Catering & Group Orders',
-    channel: 'tiktok', format: 'Spark Ad', asset: 'catering-spark-v2',
+    id: 'as-smb-linkedin', name: 'Small Business Growth — LinkedIn Sponsored', campaignId: 'rbc-smb-growth', campaignName: 'Small Business Growth',
+    channel: 'linkedin', format: 'Sponsored Content', asset: 'smb-growth-sponsored-v2',
     kpis: { spend: 88200, impressions: 7400000, clicks: 296000, ctr: 4.0, conversions: 3848, cpa: 22.92, roas: 4.4, cpm: 11.92, creativeFatigue: 26 },
     kpiDeltas: { spend: 10, impressions: 18, clicks: 20, ctr: 5, conversions: 16, cpa: -6, roas: 8, cpm: -4, creativeFatigue: 8 },
   },
   {
-    id: 'as-digital-orders-search', name: 'Digital Ordering — Search Retargeting', campaignId: 'pp-digital-orders', campaignName: 'Digital Ordering Retargeting',
-    channel: 'google-search', format: 'Search', asset: 'digital-orders-rlsa-v3',
+    id: 'as-brand-q1-ooh', name: 'RBC Master Brand — OOH', campaignId: 'rbc-brand-q1', campaignName: 'RBC Master Brand — Q1',
+    channel: 'ooh', format: 'Billboard', asset: 'brand-q1-ooh-national',
     kpis: { spend: 48900, impressions: 1600000, clicks: 112000, ctr: 7.0, conversions: 6720, cpa: 7.28, roas: 12.4, cpm: 30.56, creativeFatigue: 4 },
     kpiDeltas: { spend: 2, impressions: 5, clicks: 8, ctr: 3, conversions: 10, cpa: -7, roas: 9, cpm: -3, creativeFatigue: 0 },
   },
@@ -273,7 +274,7 @@ export function BrandView() {
   const data = useDashboardData();
   const { customKpis, setCustomKpis, compareEnabled, selectedFunnel } = useAppStore();
   const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
-  const drillToRegion = useAppStore(s => s.drillToRegion);
+  const drillToDivision = useAppStore(s => s.drillToDivision);
   const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
 
   const toggleKpi = (key: KPIKey) => {
@@ -333,8 +334,72 @@ export function BrandView() {
 
       </div>
 
-      <WorldMapChart stateData={data.stateData} />
+      {/* 2. Full-Funnel Velocity Pipeline */}
+      <FunnelVelocity data={data} compareEnabled={compareEnabled} />
 
+      {/* 3. Budget Allocation Flow / Sankey */}
+      <BudgetSankey data={data} />
+
+      {/* 4. Division Cards */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Divisions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {data.divisionData.map(d => (
+            <Card
+              key={d.division}
+              className="p-5 bg-card border-border/40 hover:border-teal/40 cursor-pointer transition-colors group"
+              onClick={() => drillToDivision(d.division)}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold group-hover:text-teal transition-colors">{d.divisionLabel}</h3>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-teal transition-colors" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Spend</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(d.kpis.spend)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">ROAS</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium tabular-nums">{formatKPIValue(d.kpis.roas, 'decimal')}</span>
+                    {compareEnabled && d.previousKpis && d.previousKpis.roas > 0 && (
+                      <ComparisonDelta deltaPercent={((d.kpis.roas - d.previousKpis.roas) / d.previousKpis.roas) * 100} higherIsBetter={true} />
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">CPA</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium tabular-nums">{formatCurrency(d.kpis.cpa)}</span>
+                    {compareEnabled && d.previousKpis && d.previousKpis.cpa > 0 && (
+                      <ComparisonDelta deltaPercent={((d.kpis.cpa - d.previousKpis.cpa) / d.previousKpis.cpa) * 100} higherIsBetter={false} />
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-border/20">
+                  <span className="text-muted-foreground">{d.campaignCount} campaigns</span>
+                  <span className="text-muted-foreground">{d.productCount} products</span>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. Audience Portfolio Health */}
+      <AudiencePortfolio data={data} />
+
+      {/* 5. Channel Frequency Intelligence */}
+      <ChannelFrequency data={data} />
+
+      {/* 6. Agency Performance Benchmarking */}
+      <AgencyBenchmarking data={data} compareEnabled={compareEnabled} />
+
+      {/* 7. Conversion Value Intelligence */}
+      <ConversionValue data={data} compareEnabled={compareEnabled} />
+
+      {/* 8. Trend Chart + Channel Mix */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <div className="xl:col-span-3">
           <TrendChart data={data.timeSeries} title="Global Performance Trend" defaultMetrics={['spend', 'conversions', 'roas']} />
@@ -344,6 +409,13 @@ export function BrandView() {
         </div>
       </div>
 
+      {/* 8. Canada Heat Map */}
+      <WorldMapChart stateData={data.stateData} />
+
+      {/* 9. Campaign Overview Chart */}
+      <CampaignOverviewChart campaignData={data.campaignData} />
+
+      {/* 10. Province Performance Table */}
       <Card className="p-6 bg-card border-border/40">
         <h3 className="text-sm font-semibold mb-4">Province Performance</h3>
         <DataTableWrapper<StateDatum>
@@ -353,90 +425,8 @@ export function BrandView() {
         />
       </Card>
 
-      <CampaignOverviewChart campaignData={data.campaignData} />
-
-      <BentoKPIGrid data={data} compareEnabled={compareEnabled} funnelStage={selectedFunnel} />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Performance Highlights */}
-        <Card className="p-6 bg-card border-border/40">
-          <div className="flex items-center gap-2 mb-5">
-            <Zap className="h-4 w-4 text-emerald-400" />
-            <h3 className="text-sm font-semibold">Performance Highlights</h3>
-          </div>
-          <div className="space-y-3">
-            {(() => {
-              const topCampaign = [...data.campaignData]
-                .filter(c => c.campaign.status === 'live' && c.kpis.spend > 0)
-                .sort((a, b) => b.kpis.roas - a.kpis.roas)[0];
-              const topProvince = [...data.stateData]
-                .filter(s => s.spend > 0)
-                .sort((a, b) => b.roas - a.roas)[0];
-              const channelEntries = Object.entries(data.channelData)
-                .filter(([, kpis]) => kpis.spend > 0)
-                .sort(([, a], [, b]) => b.roas - a.roas);
-              const topChannel = channelEntries[0];
-              const liveCampaigns = data.campaignData.filter(c => c.campaign.status === 'live');
-              const onPaceCount = liveCampaigns.filter(c => c.kpis.budgetPacing >= 85 && c.kpis.budgetPacing <= 115).length;
-
-              return (
-                <>
-                  {topCampaign && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
-                        <Target className="h-4 w-4 text-emerald-400" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Top Campaign by ROAS</p>
-                        <p className="text-sm font-medium truncate">{topCampaign.campaign.name}</p>
-                      </div>
-                      <span className="text-sm font-bold text-emerald-400 tabular-nums shrink-0">{formatKPIValue(topCampaign.kpis.roas, 'decimal')}</span>
-                    </div>
-                  )}
-                  {topChannel && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
-                        <BarChart3 className="h-4 w-4 text-emerald-400" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Top Channel by ROAS</p>
-                        <p className="text-sm font-medium">{CHANNEL_LABELS[topChannel[0] as ChannelId]}</p>
-                      </div>
-                      <span className="text-sm font-bold text-emerald-400 tabular-nums shrink-0">{formatKPIValue(topChannel[1].roas, 'decimal')}</span>
-                    </div>
-                  )}
-                  {topProvince && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
-                        <TrendingUp className="h-4 w-4 text-emerald-400" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Strongest Province</p>
-                        <p className="text-sm font-medium">{topProvince.stateName}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-sm font-bold text-emerald-400 tabular-nums">{formatKPIValue(topProvince.roas, 'decimal')}</span>
-                        <p className="text-[10px] text-muted-foreground">{formatCurrency(topProvince.spend)} spend</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 shrink-0">
-                      <DollarSign className="h-4 w-4 text-emerald-400" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Budget Pacing</p>
-                      <p className="text-sm font-medium">{onPaceCount} of {liveCampaigns.length} campaigns on pace</p>
-                    </div>
-                    <span className="text-sm font-bold text-emerald-400 tabular-nums shrink-0">{liveCampaigns.length > 0 ? Math.round((onPaceCount / liveCampaigns.length) * 100) : 0}%</span>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </Card>
-
-        {/* Watch List */}
+      {/* Watch List */}
+      <div>
         <Card className="p-6 bg-card border-border/40">
           <div className="flex items-center gap-2 mb-5">
             <Eye className="h-4 w-4 text-amber-400" />

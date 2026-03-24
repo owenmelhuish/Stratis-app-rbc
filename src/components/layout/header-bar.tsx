@@ -1,7 +1,12 @@
 "use client";
 import React, { useMemo, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import { REGION_LABELS, CHANNEL_LABELS, FUNNEL_LABELS, type RegionId, type ChannelId, type DateRangePreset, type FunnelStage } from '@/types';
+import {
+  DIVISION_LABELS, AGENCY_LABELS, PRODUCT_LINE_LABELS, AUDIENCE_LABELS, GEO_LABELS,
+  CHANNEL_LABELS, FUNNEL_LABELS,
+  type DivisionId, type AgencyId, type ProductLineId, type AudienceId, type GeoId,
+  type ChannelId, type DateRangePreset, type FunnelStage,
+} from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -10,9 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { ChevronRight, ChevronDown, SlidersHorizontal, GitCompareArrows, User, MapPin, Radio, Megaphone } from 'lucide-react';
+import { ChevronRight, ChevronDown, SlidersHorizontal, GitCompareArrows, User, MapPin, Radio, Megaphone, Building2, Briefcase, Users, Globe, Atom } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { STATE_NAMES } from '@/lib/geo';
 import { generateAllData } from '@/lib/mock-data';
 
 const DATE_PILLS: { value: DateRangePreset; label: string }[] = [
@@ -27,7 +31,7 @@ const DATE_PILLS: { value: DateRangePreset; label: string }[] = [
 function MultiSelectFilter({
   label, icon: Icon, allItems, selectedItems, onToggle, onClear, popoverWidth,
 }: {
-  label: string; icon: React.ElementType;
+  label: string; icon: React.ComponentType<{ className?: string }>;
   allItems: Record<string, string>; selectedItems: string[];
   onToggle: (id: string) => void; onClear: () => void;
   popoverWidth?: string;
@@ -65,167 +69,33 @@ function MultiSelectFilter({
   );
 }
 
-/** Region → Province[] map — all Canadian provinces belong to north-america */
-const REGION_COUNTRIES: Record<RegionId, { code: string; name: string }[]> = (() => {
-  const map: Record<string, { code: string; name: string }[]> = {};
-  for (const regionId of Object.keys(REGION_LABELS)) {
-    map[regionId] = [];
-  }
-  for (const [code, name] of Object.entries(STATE_NAMES)) {
-    map['north-america']?.push({ code, name });
-  }
-  // Sort provinces alphabetically
-  for (const list of Object.values(map)) {
-    list.sort((a, b) => a.name.localeCompare(b.name));
-  }
-  return map as Record<RegionId, { code: string; name: string }[]>;
-})();
-
-function RegionCountryFilter({
-  selectedRegions, selectedCountries,
-  onToggleRegion, onToggleCountry,
-  onClearAll,
-}: {
-  selectedRegions: RegionId[];
-  selectedCountries: string[];
-  onToggleRegion: (id: RegionId) => void;
-  onToggleCountry: (code: string) => void;
-  onClearAll: () => void;
-}) {
-  const badgeCount = selectedRegions.length + selectedCountries.length;
-  const allRegionKeys = Object.keys(REGION_LABELS) as RegionId[];
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 border-border bg-transparent text-muted-foreground hover:text-foreground gap-1.5 text-xs">
-          <MapPin className="h-3 w-3" />
-          Region
-          {badgeCount > 0 && (
-            <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] px-1 text-[10px] bg-orange/15 text-orange border-0">{badgeCount}</Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-3" align="start">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium">Region &amp; Country</p>
-          {badgeCount > 0 && <button onClick={onClearAll} className="text-[10px] text-muted-foreground hover:text-foreground">Clear</button>}
-        </div>
-        <Separator className="mb-2" />
-        <div className="space-y-0.5 max-h-72 overflow-auto">
-          {allRegionKeys.map((regionId) => {
-            const isRegionSelected = selectedRegions.includes(regionId);
-            const countries = REGION_COUNTRIES[regionId];
-            const regionCountryCodes = countries.map(c => c.code);
-            const selectedInRegion = selectedCountries.filter(c => regionCountryCodes.includes(c));
-
-            return (
-              <div key={regionId}>
-                {/* Region row */}
-                <label className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-muted/50 cursor-pointer">
-                  <Checkbox
-                    checked={isRegionSelected}
-                    onCheckedChange={() => onToggleRegion(regionId)}
-                    className="h-3.5 w-3.5"
-                  />
-                  <span className="text-xs font-medium flex-1">{REGION_LABELS[regionId]}</span>
-                  {isRegionSelected && (
-                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  )}
-                </label>
-
-                {/* Country sub-list (visible when region is checked) */}
-                {isRegionSelected && (
-                  <div className="ml-5 border-l border-border/40 pl-2 mt-0.5 mb-1">
-                    <div className="flex items-center justify-between mb-0.5 px-1">
-                      <span className="text-[10px] text-muted-foreground">
-                        {selectedInRegion.length === 0 ? 'All provinces' : `${selectedInRegion.length} selected`}
-                      </span>
-                      {selectedInRegion.length > 0 && selectedInRegion.length < countries.length && (
-                        <button
-                          onClick={() => {
-                            // Select all countries in this region
-                            const toAdd = regionCountryCodes.filter(c => !selectedCountries.includes(c));
-                            if (toAdd.length > 0) {
-                              for (const c of toAdd) onToggleCountry(c);
-                            }
-                          }}
-                          className="text-[10px] text-muted-foreground hover:text-foreground"
-                        >
-                          All
-                        </button>
-                      )}
-                      {selectedInRegion.length > 0 && (
-                        <button
-                          onClick={() => {
-                            for (const c of selectedInRegion) onToggleCountry(c);
-                          }}
-                          className="text-[10px] text-muted-foreground hover:text-foreground"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    {countries.map((country) => (
-                      <label key={country.code} className="flex items-center gap-2.5 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer">
-                        <Checkbox
-                          checked={selectedCountries.includes(country.code)}
-                          onCheckedChange={() => onToggleCountry(country.code)}
-                          className="h-3 w-3"
-                        />
-                        <span className="text-[11px]">{country.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 export function HeaderBar() {
   const {
     role, setRole, dateRange, setDatePreset, compareEnabled, toggleCompare,
-    selectedRegions, setSelectedRegions, selectedCountries, setSelectedCountries,
+    selectedDivisions, setSelectedDivisions, selectedAgencies, setSelectedAgencies,
+    selectedProductLines, setSelectedProductLines, selectedAudiences, setSelectedAudiences,
+    selectedGeos, setSelectedGeos,
     selectedChannels, setSelectedChannels, selectedCampaigns, setSelectedCampaigns,
     attributionModel, setAttributionModel,
-    selectedRegion, selectedCampaign, setSelectedRegion, setSelectedCampaign,
+    selectedDivision, selectedProductLine, selectedCampaign,
+    setSelectedDivision, setSelectedProductLine, setSelectedCampaign,
     selectedFunnel, setFunnel,
+    molecularFilterOpen, setMolecularFilterOpen, molecularSelections,
   } = useAppStore();
 
   const store = useMemo(() => generateAllData(), []);
 
-  // States available based on selected regions
-  const availableCountries = useMemo(() => {
-    const items: Record<string, string> = {};
-    for (const [code, name] of Object.entries(STATE_NAMES)) {
-      if (selectedRegions.length > 0) {
-        // All states belong to north-america
-        if (!selectedRegions.includes('north-america')) continue;
-      }
-      items[code] = name;
-    }
-    return items;
-  }, [selectedRegions]);
-
-  // Campaigns available based on selected regions + countries
+  // Campaigns available based on selected filters
   const availableCampaigns = useMemo(() => {
     let camps = store.campaigns;
-    if (selectedRegions.length > 0) {
-      camps = camps.filter(c => selectedRegions.includes(c.region));
-    }
-    if (selectedCountries.length > 0) {
-      const countrySet = new Set(selectedCountries);
-      camps = camps.filter(c => c.countries.some(cc => countrySet.has(cc)));
-    }
+    if (selectedDivisions.length > 0) camps = camps.filter(c => selectedDivisions.includes(c.division));
+    if (selectedGeos.length > 0) camps = camps.filter(c => c.geos.some(g => selectedGeos.includes(g)));
+    if (selectedAgencies.length > 0) camps = camps.filter(c => selectedAgencies.includes(c.agency));
+    if (selectedProductLines.length > 0) camps = camps.filter(c => selectedProductLines.includes(c.productLine));
+    if (selectedAudiences.length > 0) camps = camps.filter(c => c.audiences.some(a => selectedAudiences.includes(a)));
     return camps;
-  }, [store, selectedRegions, selectedCountries]);
+  }, [store, selectedDivisions, selectedGeos, selectedAgencies, selectedProductLines, selectedAudiences]);
 
-  // Label map for campaign multi-select
   const campaignItems = useMemo(() => {
     const items: Record<string, string> = {};
     for (const c of availableCampaigns) {
@@ -234,7 +104,6 @@ export function HeaderBar() {
     return items;
   }, [availableCampaigns]);
 
-  // Channels available based on selected campaigns
   const availableChannels = useMemo(() => {
     if (selectedCampaigns.length === 0) {
       return CHANNEL_LABELS as unknown as Record<string, string>;
@@ -251,17 +120,7 @@ export function HeaderBar() {
     return items;
   }, [store, selectedCampaigns]);
 
-  // Prune stale country selections when regions change
-  useEffect(() => {
-    if (selectedCountries.length === 0) return;
-    const validCodes = new Set(Object.keys(availableCountries));
-    const pruned = selectedCountries.filter(code => validCodes.has(code));
-    if (pruned.length !== selectedCountries.length) {
-      setSelectedCountries(pruned);
-    }
-  }, [availableCountries, selectedCountries, setSelectedCountries]);
-
-  // Prune stale campaign selections when regions/countries change
+  // Prune stale campaign selections
   useEffect(() => {
     if (selectedCampaigns.length === 0) return;
     const validIds = new Set(availableCampaigns.map(c => c.id));
@@ -271,7 +130,7 @@ export function HeaderBar() {
     }
   }, [availableCampaigns, selectedCampaigns, setSelectedCampaigns]);
 
-  // Prune stale channel selections when campaigns change
+  // Prune stale channel selections
   useEffect(() => {
     if (selectedChannels.length === 0) return;
     const validChannels = new Set(Object.keys(availableChannels));
@@ -281,56 +140,40 @@ export function HeaderBar() {
     }
   }, [availableChannels, selectedChannels, setSelectedChannels]);
 
-  const viewLevel = selectedCampaign ? 'campaign' : selectedRegion ? 'region' : 'brand';
-  const viewLabel = viewLevel === 'campaign' ? 'Campaign View' : viewLevel === 'region' ? 'Region View' : 'Brand View';
+  const viewLevel = selectedCampaign ? 'campaign' : selectedProductLine ? 'product' : selectedDivision ? 'division' : 'brand';
+  const viewLabel = viewLevel === 'campaign' ? 'Campaign View' : viewLevel === 'product' ? 'Product View' : viewLevel === 'division' ? 'Division View' : 'Brand View';
 
-  const toggleRegion = (id: string) => {
-    const r = id as RegionId;
-    if (selectedRegions.includes(r)) {
-      setSelectedRegions(selectedRegions.filter(x => x !== r));
-      // Clear any country selections belonging to this region
-      const regionCodes = new Set(REGION_COUNTRIES[r].map(c => c.code));
-      const pruned = selectedCountries.filter(c => !regionCodes.has(c));
-      if (pruned.length !== selectedCountries.length) {
-        setSelectedCountries(pruned);
-      }
-    } else {
-      setSelectedRegions([...selectedRegions, r]);
-    }
-  };
-
-  const toggleCountry = (id: string) => {
-    setSelectedCountries(selectedCountries.includes(id) ? selectedCountries.filter(x => x !== id) : [...selectedCountries, id]);
-  };
-
-  const toggleCampaign = (id: string) => {
-    setSelectedCampaigns(selectedCampaigns.includes(id) ? selectedCampaigns.filter(x => x !== id) : [...selectedCampaigns, id]);
-  };
-
-  const toggleChannel = (id: string) => {
-    const c = id as ChannelId;
-    setSelectedChannels(selectedChannels.includes(c) ? selectedChannels.filter(x => x !== c) : [...selectedChannels, c]);
+  const toggleItem = <T extends string>(list: T[], item: T, setter: (v: T[]) => void) => {
+    setter(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
   };
 
   return (
     <header className="shrink-0 border-b border-border/30 bg-background/60 backdrop-blur-md">
       <div className="flex items-center justify-between px-8 h-12">
         <div className="flex items-center gap-1.5 min-w-0">
-          <button onClick={() => { setSelectedRegion(null); setSelectedCampaign(null); }} className="text-sm font-semibold text-foreground hover:text-teal transition-colors">
-            Pizza Pizza
+          <button onClick={() => { setSelectedDivision(null); setSelectedProductLine(null); setSelectedCampaign(null); }} className="text-sm font-semibold text-foreground hover:text-teal transition-colors">
+            RBC
           </button>
-          {selectedRegion && (
+          {selectedDivision && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <button onClick={() => { setSelectedProductLine(null); setSelectedCampaign(null); }} className="text-sm font-medium text-foreground hover:text-teal transition-colors truncate">
+                {DIVISION_LABELS[selectedDivision]}
+              </button>
+            </>
+          )}
+          {selectedProductLine && (
             <>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <button onClick={() => setSelectedCampaign(null)} className="text-sm font-medium text-foreground hover:text-teal transition-colors truncate">
-                {REGION_LABELS[selectedRegion]}
+                {PRODUCT_LINE_LABELS[selectedProductLine]}
               </button>
             </>
           )}
           {selectedCampaign && (
             <>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm font-medium text-foreground truncate">{selectedCampaign}</span>
+              <span className="text-sm font-medium text-foreground truncate">{store.campaigns.find(c => c.id === selectedCampaign)?.name ?? selectedCampaign}</span>
             </>
           )}
           <Badge variant="outline" className="ml-2 text-[10px] font-medium border-border text-muted-foreground shrink-0">{viewLabel}</Badge>
@@ -347,7 +190,6 @@ export function HeaderBar() {
 
           <Separator orientation="vertical" className="h-5" />
 
-          {/* Pill date selector */}
           <div className="flex items-center gap-0.5 rounded-lg bg-muted/30 p-0.5">
             {DATE_PILLS.map((p) => (
               <button
@@ -397,15 +239,30 @@ export function HeaderBar() {
 
         <Separator orientation="vertical" className="h-5" />
 
-        <RegionCountryFilter
-          selectedRegions={selectedRegions}
-          selectedCountries={selectedCountries}
-          onToggleRegion={(id) => toggleRegion(id)}
-          onToggleCountry={toggleCountry}
-          onClearAll={() => { setSelectedRegions([]); setSelectedCountries([]); }}
-        />
-        <MultiSelectFilter label="Campaign" icon={Megaphone} allItems={campaignItems} selectedItems={selectedCampaigns} onToggle={toggleCampaign} onClear={() => setSelectedCampaigns([])} popoverWidth="w-72" />
-        <MultiSelectFilter label="Channel" icon={Radio} allItems={availableChannels} selectedItems={selectedChannels} onToggle={toggleChannel} onClear={() => setSelectedChannels([])} />
+        <MultiSelectFilter label="Division" icon={Building2} allItems={DIVISION_LABELS as unknown as Record<string, string>} selectedItems={selectedDivisions} onToggle={(id) => toggleItem(selectedDivisions, id as DivisionId, setSelectedDivisions)} onClear={() => setSelectedDivisions([])} />
+        <MultiSelectFilter label="Agency" icon={Briefcase} allItems={AGENCY_LABELS as unknown as Record<string, string>} selectedItems={selectedAgencies} onToggle={(id) => toggleItem(selectedAgencies, id as AgencyId, setSelectedAgencies)} onClear={() => setSelectedAgencies([])} />
+        <MultiSelectFilter label="Product" icon={Megaphone} allItems={PRODUCT_LINE_LABELS as unknown as Record<string, string>} selectedItems={selectedProductLines} onToggle={(id) => toggleItem(selectedProductLines, id as ProductLineId, setSelectedProductLines)} onClear={() => setSelectedProductLines([])} popoverWidth="w-72" />
+        <MultiSelectFilter label="Audience" icon={Users} allItems={AUDIENCE_LABELS as unknown as Record<string, string>} selectedItems={selectedAudiences} onToggle={(id) => toggleItem(selectedAudiences, id as AudienceId, setSelectedAudiences)} onClear={() => setSelectedAudiences([])} />
+        <MultiSelectFilter label="Geography" icon={Globe} allItems={GEO_LABELS as unknown as Record<string, string>} selectedItems={selectedGeos} onToggle={(id) => toggleItem(selectedGeos, id as GeoId, setSelectedGeos)} onClear={() => setSelectedGeos([])} />
+        <MultiSelectFilter label="Campaign" icon={MapPin} allItems={campaignItems} selectedItems={selectedCampaigns} onToggle={(id) => toggleItem(selectedCampaigns, id, setSelectedCampaigns)} onClear={() => setSelectedCampaigns([])} popoverWidth="w-72" />
+        <MultiSelectFilter label="Channel" icon={Radio} allItems={availableChannels} selectedItems={selectedChannels} onToggle={(id) => toggleItem(selectedChannels, id as ChannelId, setSelectedChannels)} onClear={() => setSelectedChannels([])} />
+
+        <Separator orientation="vertical" className="h-5" />
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 border-teal/30 bg-teal/10 text-teal hover:bg-teal/20 gap-1.5 text-xs"
+          onClick={() => setMolecularFilterOpen(true)}
+        >
+          <Atom className="h-3 w-3" />
+          Filter Data
+        </Button>
+        {molecularSelections.length > 0 && (
+          <Badge className="bg-teal/15 text-teal text-[10px] border-0">
+            {molecularSelections.length} molecular filters
+          </Badge>
+        )}
 
         <Select value={attributionModel} onValueChange={(v) => setAttributionModel(v as typeof attributionModel)}>
           <SelectTrigger className="h-7 w-[140px] text-xs border-border bg-transparent text-muted-foreground ml-auto">

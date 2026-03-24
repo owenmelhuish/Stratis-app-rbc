@@ -110,6 +110,12 @@ const FUNNEL_GRID_LAYOUTS: Record<FunnelStage, GridLayout> = {
     row2Col1: 'spend', row2Col2: 'revenue', row2Wide: 'assistedConversions',
     row3Col1: 'budgetPacing', row3Col2: 'cpl', row3Col3: 'leads', row3Col4: 'conversions',
   },
+  retention: {
+    dualMetric1: 'conversions', dualMetric2: 'leads',
+    row1Col3: 'cpa', row1Col4: 'roas',
+    row2Col1: 'spend', row2Col2: 'revenue', row2Wide: 'assistedConversions',
+    row3Col1: 'budgetPacing', row3Col2: 'cpl', row3Col3: 'leads', row3Col4: 'conversions',
+  },
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -1219,32 +1225,32 @@ interface Persona {
 
 const PERSONAS: Persona[] = [
   {
-    id: "tiktok-foodie", name: "TikTok Foodie", shortName: "TikTok",
+    id: "young-professional", name: "Young Professional", shortName: "Young Prof.",
     reachShare: 32, engagementIdx: 93, deltaPercent: 18, color: "#50b89a",
-    kpis: { cvr: 4.2, cvrDelta: 12, cpa: 8.40, cpaDelta: -15, aov: 34.50, aovDelta: 6, roas: 3.8, roasDelta: 22, ltv: 142, ltvDelta: 9, frequency: 2.4, frequencyDelta: 5 },
-    topChannels: [{ name: "TikTok", share: 42 }, { name: "Instagram", share: 28 }, { name: "Spotify", share: 18 }],
-    topCategories: [{ name: "Pizza", share: 38 }, { name: "Sides", share: 24 }, { name: "Drinks", share: 20 }],
+    kpis: { cvr: 3.8, cvrDelta: 12, cpa: 142, cpaDelta: -15, aov: 2400, aovDelta: 6, roas: 3.2, roasDelta: 22, ltv: 8500, ltvDelta: 9, frequency: 2.4, frequencyDelta: 5 },
+    topChannels: [{ name: "TikTok", share: 42 }, { name: "Instagram", share: 28 }, { name: "Google Search", share: 18 }],
+    topCategories: [{ name: "Credit Cards", share: 42 }, { name: "Investments", share: 31 }, { name: "Banking", share: 27 }],
   },
   {
-    id: "loyalty-member", name: "Pizza Pizza Club Loyalist", shortName: "Loyalty",
+    id: "family", name: "Family Household", shortName: "Family",
     reachShare: 28, engagementIdx: 89, deltaPercent: 8, color: "#3d8c76",
-    kpis: { cvr: 6.1, cvrDelta: 4, cpa: 5.20, cpaDelta: -8, aov: 52.80, aovDelta: 11, roas: 5.2, roasDelta: 14, ltv: 289, ltvDelta: 16, frequency: 3.8, frequencyDelta: 3 },
+    kpis: { cvr: 2.9, cvrDelta: 4, cpa: 168, cpaDelta: -8, aov: 3200, aovDelta: 11, roas: 2.8, roasDelta: 14, ltv: 12500, ltvDelta: 16, frequency: 1.6, frequencyDelta: 3 },
     topChannels: [{ name: "Google Search", share: 34 }, { name: "Meta", share: 26 }, { name: "CTV", share: 22 }],
-    topCategories: [{ name: "Combos", share: 30 }, { name: "Family Packs", share: 28 }, { name: "Specials", share: 22 }],
+    topCategories: [{ name: "Mortgages", share: 38 }, { name: "Insurance", share: 34 }, { name: "Credit Cards", share: 28 }],
   },
   {
-    id: "family-value-seeker", name: "Family Value Seeker", shortName: "Family",
+    id: "high-net-worth", name: "High-Net-Worth", shortName: "HNW",
     reachShare: 24, engagementIdx: 76, deltaPercent: 3, color: "#2d6658",
-    kpis: { cvr: 3.4, cvrDelta: 1, cpa: 11.60, cpaDelta: -2, aov: 41.20, aovDelta: 3, roas: 2.9, roasDelta: 5, ltv: 198, ltvDelta: 4, frequency: 1.6, frequencyDelta: -1 },
-    topChannels: [{ name: "Google Search", share: 40 }, { name: "The Trade Desk", share: 24 }, { name: "CTV", share: 20 }],
-    topCategories: [{ name: "Family Packs", share: 44 }, { name: "Combos", share: 32 }, { name: "Sides", share: 14 }],
+    kpis: { cvr: 2.1, cvrDelta: 1, cpa: 285, cpaDelta: -2, aov: 8500, aovDelta: 3, roas: 3.5, roasDelta: 5, ltv: 45000, ltvDelta: 4, frequency: 1.2, frequencyDelta: -1 },
+    topChannels: [{ name: "LinkedIn", share: 40 }, { name: "CTV", share: 24 }, { name: "Google Search", share: 20 }],
+    topCategories: [{ name: "Wealth Management", share: 45 }, { name: "Premium Cards", share: 30 }, { name: "Insurance", share: 25 }],
   },
   {
-    id: "late-night-craver", name: "The Late Night Craver", shortName: "Late Night",
+    id: "student", name: "Student", shortName: "Student",
     reachShare: 16, engagementIdx: 82, deltaPercent: 14, color: "#1e453b",
-    kpis: { cvr: 5.6, cvrDelta: 18, cpa: 6.80, cpaDelta: -12, aov: 48.60, aovDelta: 15, roas: 4.1, roasDelta: 19, ltv: 176, ltvDelta: 12, frequency: 2.1, frequencyDelta: 8 },
-    topChannels: [{ name: "Instagram", share: 36 }, { name: "TikTok", share: 28 }, { name: "Spotify", share: 20 }],
-    topCategories: [{ name: "Pizza", share: 34 }, { name: "Wings", share: 30 }, { name: "Dips & Extras", share: 22 }],
+    kpis: { cvr: 4.2, cvrDelta: 18, cpa: 62, cpaDelta: -12, aov: 850, aovDelta: 15, roas: 2.4, roasDelta: 19, ltv: 3200, ltvDelta: 12, frequency: 2.8, frequencyDelta: 8 },
+    topChannels: [{ name: "TikTok", share: 36 }, { name: "Instagram", share: 28 }, { name: "Spotify", share: 20 }],
+    topCategories: [{ name: "ION Card", share: 38 }, { name: "Student Banking", share: 34 }, { name: "TFSA", share: 28 }],
   },
 ];
 
@@ -1306,7 +1312,7 @@ function PersonaDonut({ activeIndex, onSelect }: { activeIndex: number; onSelect
 
 // ─── M. Persona KPI Detail Card ─────────────────────────────────────────────
 
-const KPI_ICON_MAP: Record<string, React.ElementType> = {
+const KPI_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   cvr: Target,
   cpa: DollarSign,
   aov: ShoppingCart,

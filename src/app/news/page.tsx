@@ -19,55 +19,55 @@ const FEED_SECTIONS: FeedSection[] = [
   {
     id: "brand",
     title: "Brand & Corporate Narrative",
-    sources: ["Retail Insider", "Financial Post", "Strategy Online", "The Globe and Mail"],
+    sources: ["Financial Post", "The Globe and Mail", "Strategy Online", "BNN Bloomberg"],
     filterFn: (item) => item.tags.includes("brand"),
   },
   {
-    id: "qsr",
-    title: "QSR Industry & Market Trends",
-    sources: ["QSR Magazine", "Technomic", "Foodservice & Hospitality", "Restaurants Canada"],
-    filterFn: (item) => item.tags.includes("qsr"),
+    id: "banking",
+    title: "Banking Industry & Regulation",
+    sources: ["OSFI Bulletin", "Financial Post", "The Globe and Mail", "Canadian Banker"],
+    filterFn: (item) => item.tags.includes("banking"),
   },
   {
-    id: "menu",
-    title: "Menu Innovation & Food Trends",
-    sources: ["Technomic", "QSR Magazine", "Food in Canada", "Restaurants Canada"],
-    filterFn: (item) => item.tags.includes("menu"),
+    id: "credit-cards",
+    title: "Credit Card & Payments",
+    sources: ["Financial Post", "Ratehub.ca", "MoneySense", "The Globe and Mail"],
+    filterFn: (item) => item.tags.includes("credit-cards"),
   },
   {
-    id: "delivery",
-    title: "Delivery Platform Intelligence",
-    sources: ["UberEats Data", "DoorDash Insights", "SkipTheDishes Analytics", "Technomic"],
-    filterFn: (item) => item.tags.includes("delivery"),
+    id: "fintech",
+    title: "Digital Banking & Fintech",
+    sources: ["BetaKit", "TechCrunch", "Financial Post", "The Logic"],
+    filterFn: (item) => item.tags.includes("fintech"),
   },
   {
     id: "social",
-    title: "Social & Food Culture",
-    sources: ["Reddit r/pizza", "Reddit r/foodToronto", "Reddit r/CanadianFood", "TikTok #FoodTok"],
+    title: "Social & Financial Culture",
+    sources: ["Reddit r/PersonalFinanceCanada", "Reddit r/investing", "TikTok #FinTok", "YouTube"],
     filterFn: (item) => item.tags.includes("social"),
   },
   {
     id: "sports",
     title: "Sports, Events & Partnerships",
-    sources: ["TSN", "Sportsnet", "Retail Insider", "Strategy Online"],
+    sources: ["TSN", "Sportsnet", "Strategy Online", "The Athletic"],
     filterFn: (item) => item.tags.includes("sports"),
   },
   {
     id: "sponsorships",
     title: "Corporate Sponsorships",
-    sources: ["TSN", "Sportsnet", "The Athletic", "CFL.ca", "PWHL News"],
+    sources: ["TSN", "Sportsnet", "The Athletic", "Strategy Online"],
     filterFn: (item) => item.tags.includes("sponsorships"),
   },
   {
     id: "competitors",
     title: "Competitor Watch",
-    sources: ["Retail Insider", "QSR Magazine", "RedFlagDeals", "Financial Post", "Technomic"],
+    sources: ["Financial Post", "The Globe and Mail", "Bloomberg", "J.D. Power"],
     filterFn: (item) => item.tags.includes("competitors"),
   },
   {
     id: "macro",
-    title: "Macro Consumer & QSR Environment",
-    sources: ["Statistics Canada", "The Globe and Mail", "Financial Post", "Deloitte Canada"],
+    title: "Macro Consumer & Financial Environment",
+    sources: ["Statistics Canada", "The Globe and Mail", "Financial Post", "Bank of Canada"],
     filterFn: (item) => item.tags.includes("macro"),
   },
 ];
@@ -75,86 +75,43 @@ const FEED_SECTIONS: FeedSection[] = [
 // ─── Contextual image URL from article title ────────────────────────────────
 
 const CURATED_IMAGES: Array<{ match: RegExp; photos: string[] }> = [
-  // ── Brand & Corporate Narrative (pinned) — QSR/pizza imagery ──
-  { match: /CEO Interview.*QSR Expansion/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /Pizza Pizza Club.*Surpasses/i, photos: ["photo-1604382354936-07c5d9983bd3"] },
-  { match: /ESG Report.*Sustainable Packaging/i, photos: ["photo-1559526324-4b87b5e36e44"] },
-  // Brand loop
-  { match: /Viral TikTok.*Delivery Challenge/i, photos: ["photo-1513104890138-7c749659a591"] },
-  { match: /Opens 15 New Locations/i, photos: ["photo-1555396273-367ea4eb4db5"] },
-  { match: /NHL Team.*Game Day Combo/i, photos: ["photo-1574071318508-1cdbab80d002"] },
+  // ── Brand & Corporate Narrative ──
+  { match: /CEO|corporate|brand|narrative/i, photos: ["photo-1460925895917-afdab827c52f"] },
+  { match: /ESG|sustainable|sustainability/i, photos: ["photo-1559526324-4b87b5e36e44"] },
+  { match: /expansion|growth/i, photos: ["photo-1555396273-367ea4eb4db5"] },
 
-  // ── QSR Industry & Market Trends (pinned) ──
-  { match: /Canadian QSR Revenue.*\$38B/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /Third-Party Delivery Commission/i, photos: ["photo-1526367790999-0150786686a2"] },
-  { match: /Value Menu Resurgence/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
-  // QSR loop
-  { match: /Independent QSR Operators.*22%/i, photos: ["photo-1590947132387-155cc02f3212"] },
-  { match: /Ghost Kitchen Model/i, photos: ["photo-1567620905732-2d1ec7ab7445"] },
-  { match: /Pizza as Most-Ordered/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
+  // ── Financial Services Industry ──
+  { match: /revenue|market|industry/i, photos: ["photo-1552566626-52f8b828add9"] },
+  { match: /digital|fintech|platform/i, photos: ["photo-1556742393-d75f468bfcb0"] },
+  { match: /banking|bank/i, photos: ["photo-1526367790999-0150786686a2"] },
 
-  // ── Menu Innovation & Food Trends (pinned) ──
-  { match: /Plant-Based Pizza Demand/i, photos: ["photo-1574071318508-1cdbab80d002"] },
-  { match: /Loaded Crust.*Premium Toppings/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /Detroit-Style Deep Dish/i, photos: ["photo-1513104890138-7c749659a591"] },
-  // Menu loop
-  { match: /Spicy and Global Flavour/i, photos: ["photo-1604382354936-07c5d9983bd3"] },
-  { match: /Breakfast Pizza.*Demand Surge/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /Pizza Subscription Models/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
+  // ── Product & Innovation ──
+  { match: /card|credit|avion|ion/i, photos: ["photo-1574071318508-1cdbab80d002"] },
+  { match: /mortgage|home/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
+  { match: /invest|TFSA|wealth/i, photos: ["photo-1590947132387-155cc02f3212"] },
 
-  // ── Delivery Platform Intelligence (pinned) ──
-  { match: /UberEats.*Pizza Holds 3 of Top 5/i, photos: ["photo-1526367790999-0150786686a2"] },
-  { match: /DoorDash.*Healthy Pizza.*Cauliflower/i, photos: ["photo-1590947132387-155cc02f3212"] },
-  { match: /SkipTheDishes.*Daypart/i, photos: ["photo-1567620905732-2d1ec7ab7445"] },
-  // Delivery loop
-  { match: /UberEats.*Pizza Bundle Orders/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
-  { match: /DoorDash Order Velocity/i, photos: ["photo-1555396273-367ea4eb4db5"] },
-  { match: /SkipTheDishes Late-Night/i, photos: ["photo-1513104890138-7c749659a591"] },
+  // ── Digital Banking ──
+  { match: /mobile|app|digital banking/i, photos: ["photo-1567620905732-2d1ec7ab7445"] },
+  { match: /payment|contactless/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
 
-  // ── Social & Food Culture (pinned) ──
-  { match: /r\/pizza.*Go-To Order/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /r\/foodToronto.*Late-Night Pizza/i, photos: ["photo-1604382354936-07c5d9983bd3"] },
-  { match: /r\/CanadianFood.*Regional Pizza/i, photos: ["photo-1574071318508-1cdbab80d002"] },
-  // Social loop
-  { match: /r\/pizza.*Pizza Hack/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /r\/foodToronto Grows to 280K/i, photos: ["photo-1590947132387-155cc02f3212"] },
-  { match: /TikTok #PizzaReview/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
+  // ── Social & Financial Culture ──
+  { match: /reddit|tiktok|social/i, photos: ["photo-1604382354936-07c5d9983bd3"] },
+  { match: /community|culture/i, photos: ["photo-1513104890138-7c749659a591"] },
 
-  // ── Sports, Events & Partnerships (pinned) ──
-  { match: /Game Day Pizza Orders Surge/i, photos: ["photo-1574071318508-1cdbab80d002"] },
-  { match: /Super Bowl Pizza Demand/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /Raptors Partnership.*Arena/i, photos: ["photo-1546519638-68e109498ffc"] },
-  // Sports loop
-  { match: /March Madness.*NHL Playoffs.*Catering/i, photos: ["photo-1526367790999-0150786686a2"] },
-  { match: /Sports Sponsorship ROI/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
-  { match: /FIFA World Cup 2026/i, photos: ["photo-1555396273-367ea4eb4db5"] },
+  // ── Sports & Sponsorships ──
+  { match: /sports|game day|NHL|hockey/i, photos: ["photo-1546519638-68e109498ffc"] },
+  { match: /Maple Leafs|Raptors/i, photos: ["photo-1552566626-52f8b828add9"] },
+  { match: /PWHL|women/i, photos: ["photo-1515703407324-5f753afd8be8"] },
+  { match: /CFL|Lions|football/i, photos: ["photo-1487466365202-1afdb86c764e"] },
 
-  // ── Corporate Sponsorships (pinned) ──
-  { match: /Maple Leafs Playoff Push/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /PWHL Championship Series/i, photos: ["photo-1515703407324-5f753afd8be8"] },
-  { match: /BC Lions.*Season Opener/i, photos: ["photo-1487466365202-1afdb86c764e"] },
-  // Sponsorships loop
-  { match: /Maple Leafs Star Signs Extension/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /PWHL Toronto.*Community Arena/i, photos: ["photo-1515703407324-5f753afd8be8"] },
-  { match: /Grey Cup Week Programming/i, photos: ["photo-1487466365202-1afdb86c764e"] },
+  // ── Competitor Watch ──
+  { match: /TD|BMO|Scotiabank|CIBC|competitor/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
 
-  // ── Competitor Watch (pinned) ──
-  { match: /Domino.*Emergency Pizza/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
-  { match: /Pizza Nova.*200 Locations/i, photos: ["photo-1590947132387-155cc02f3212"] },
-  { match: /Pizza Hut.*Lunch Combo/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
-  // Competitors loop
-  { match: /Domino.*15-Minute Delivery/i, photos: ["photo-1567620905732-2d1ec7ab7445"] },
-  { match: /Pizza Nova.*Toppings Bar/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /Pizza Hut.*DoorDash.*Bundle/i, photos: ["photo-1526367790999-0150786686a2"] },
-
-  // ── Macro Consumer & QSR (pinned) ──
-  { match: /Consumer Confidence Dips/i, photos: ["photo-1460925895917-afdab827c52f"] },
-  { match: /Digital Ordering Share.*38%/i, photos: ["photo-1556742393-d75f468bfcb0"] },
-  { match: /QSR Foot Traffic Stabilizes/i, photos: ["photo-1441984904996-e0b6ba687e04"] },
-  // Macro loop
-  { match: /Holiday Spending Forecast/i, photos: ["photo-1607083206968-13611e3d76db"] },
-  { match: /Inflation Sensitivity.*QSR Pizza/i, photos: ["photo-1551288049-bebda4e38f71"] },
-  { match: /Convenience Expectations.*Sub-30/i, photos: ["photo-1586528116311-ad8dd3c8310d"] },
+  // ── Macro Environment ──
+  { match: /Consumer Confidence|inflation/i, photos: ["photo-1460925895917-afdab827c52f"] },
+  { match: /interest rate|Bank of Canada/i, photos: ["photo-1551288049-bebda4e38f71"] },
+  { match: /housing|real estate/i, photos: ["photo-1586528116311-ad8dd3c8310d"] },
+  { match: /spending|forecast/i, photos: ["photo-1607083206968-13611e3d76db"] },
 ];
 
 const FALLBACK_PHOTOS = [
@@ -203,115 +160,115 @@ function articleImageUrlLarge(title: string, id: string): string {
 
 const TAG_LABELS: Record<NewsTag, string> = {
   brand: "Brand & Corporate Narrative",
-  qsr: "QSR Industry & Market Trends",
-  menu: "Menu Innovation & Food Trends",
-  delivery: "Delivery Platform Intelligence",
-  social: "Social & Food Culture",
+  banking: "Banking Industry & Regulation",
+  'credit-cards': "Credit Card & Payments",
+  fintech: "Digital Banking & Fintech",
+  social: "Social & Financial Culture",
   sports: "Sports, Events & Partnerships",
   sponsorships: "Corporate Sponsorships",
   competitors: "Competitor Watch",
-  macro: "Macro Consumer & QSR",
+  macro: "Macro Consumer & Financial",
 };
 
-function generateInsight(item: NewsItem): { impact: string; actions: Array<{ icon: React.ElementType; title: string; description: string }> } {
+function generateInsight(item: NewsItem): { impact: string; actions: Array<{ icon: React.ComponentType<{ className?: string }>; title: string; description: string }> } {
   const tag = item.tags[0];
 
   if (tag === "brand") {
     return {
-      impact: "This signals a shift in how the market perceives Pizza Pizza's brand narrative. Whether it's expansion strategy, executive positioning, loyalty evolution, or sustainability messaging, every public-facing signal shapes market confidence and customer expectation. Pizza Pizza's ability to control this narrative directly affects brand equity, franchisee sentiment, and competitive positioning.",
+      impact: "This signals a shift in how the market perceives RBC's brand narrative. Whether it's growth strategy, executive positioning, digital transformation, or ESG messaging, every public-facing signal shapes market confidence and customer trust. RBC's ability to control this narrative directly affects brand equity, investor sentiment, and competitive positioning across all divisions.",
       actions: [
-        { icon: TrendingUp, title: "Amplify Positive Brand Signals", description: "If the narrative is favourable, accelerate owned and paid amplification. Feature the story across Pizza Pizza's social channels and align PR with the momentum before it fades." },
-        { icon: Target, title: "Track Narrative Trajectory", description: "Monitor whether this story is being picked up by other outlets and how the tone is shifting. Flag any divergence between Pizza Pizza's intended positioning and how the market is interpreting it." },
-        { icon: Shield, title: "Prepare Counter-Narrative if Needed", description: "If sentiment is negative or mixed, draft response messaging and identify owned channels to reinforce the brand's intended narrative around value, Canadian identity, and delivery excellence." },
+        { icon: TrendingUp, title: "Amplify Positive Brand Signals", description: "If the narrative is favourable, accelerate owned and paid amplification. Feature the story across RBC's social channels and align PR with the momentum before it fades." },
+        { icon: Target, title: "Track Narrative Trajectory", description: "Monitor whether this story is being picked up by other outlets and how the tone is shifting. Flag any divergence between RBC's intended positioning and how the market is interpreting it." },
+        { icon: Shield, title: "Prepare Counter-Narrative if Needed", description: "If sentiment is negative or mixed, draft response messaging and identify owned channels to reinforce the brand's intended narrative around trust, innovation, and Canadian leadership." },
       ],
     };
   }
-  if (tag === "qsr") {
+  if (tag === "banking") {
     return {
-      impact: "Canada's QSR industry revenue reached $38B in 2024, with continued growth from digital ordering and delivery platforms. Shifts in the QSR landscape — from value menu resurgence to delivery commission pressures to ghost kitchen expansion — have direct implications for Pizza Pizza's pricing strategy, channel mix, and competitive positioning.",
+      impact: "Canada's financial services landscape is evolving rapidly with digital transformation, Open Banking regulation, and shifting consumer expectations. These industry-level shifts have direct implications for RBC's product strategy, channel mix, and competitive positioning across personal banking, wealth management, and insurance.",
       actions: [
-        { icon: TrendingUp, title: "Align Strategy to Industry Momentum", description: "Cross-reference this QSR industry shift against Pizza Pizza's current performance. If a trend is accelerating industry-wide, ensure Pizza Pizza's marketing and menu strategy reflect it before competitors respond." },
-        { icon: Target, title: "Monitor Delivery Platform Dynamics", description: "Track delivery commission rates, platform market share shifts, and direct-ordering adoption rates. Identify where delivery platform changes create opportunity or risk for Pizza Pizza's margins." },
-        { icon: Shield, title: "Watch for Competitive Threats", description: "QSR industry shifts often create competitive openings — new entrants, ghost kitchens, or format innovations. Flag emerging competitive threats for strategic evaluation." },
+        { icon: TrendingUp, title: "Align Strategy to Industry Momentum", description: "Cross-reference this financial services industry shift against RBC's current performance. If a trend is accelerating industry-wide, ensure RBC's marketing and product strategy reflect it before competitors respond." },
+        { icon: Target, title: "Monitor Digital Banking Dynamics", description: "Track digital adoption rates, fintech market share shifts, and Open Banking readiness. Identify where industry changes create opportunity or risk for RBC's customer acquisition and retention." },
+        { icon: Shield, title: "Watch for Competitive Threats", description: "Financial services industry shifts often create competitive openings — neobanks, embedded finance, or regulatory changes. Flag emerging competitive threats for strategic evaluation." },
       ],
     };
   }
-  if (tag === "menu") {
+  if (tag === "credit-cards") {
     return {
-      impact: "Menu innovation and food trend tracking helps Pizza Pizza move from reacting to trends to anticipating demand. Recent signals show continued consumer interest in plant-based options, premium toppings, global flavours, and new pizza styles. Catching these signals early means better menu positioning, smarter LTO planning, and more relevant marketing.",
+      impact: "Product innovation tracking helps RBC move from reacting to market trends to anticipating customer demand. Recent signals show continued consumer interest in digital-first experiences, rewards integration, sustainable investing, and personalized financial products. Catching these signals early means better product positioning, smarter launch planning, and more relevant marketing.",
       actions: [
-        { icon: TrendingUp, title: "Anticipate Demand — Don't Chase It", description: "If a flavour profile or pizza style is showing breakout signals, ensure Pizza Pizza's menu innovation pipeline and marketing creative are ahead of the curve before the trend peaks." },
-        { icon: Target, title: "Cross-Reference with Social Signals", description: "Check whether this menu trend is being amplified on TikTok, Reddit, or food blogs. Social amplification accelerates demand velocity and shortens the window to capture it." },
-        { icon: Shield, title: "Flag Seasonal and Cultural Triggers", description: "Track upcoming cultural moments, sports seasons, and seasonal preferences. These are predictable demand drivers that Pizza Pizza can build LTOs and campaigns around with lead time." },
+        { icon: TrendingUp, title: "Anticipate Demand — Don't Chase It", description: "If a product category or feature is showing breakout signals, ensure RBC's innovation pipeline and marketing creative are ahead of the curve before the trend peaks." },
+        { icon: Target, title: "Cross-Reference with Social Signals", description: "Check whether this product trend is being amplified on Reddit, TikTok FinTok, or financial blogs. Social amplification accelerates demand velocity and shortens the window to capture it." },
+        { icon: Shield, title: "Flag Seasonal and Life-Stage Triggers", description: "Track upcoming tax seasons, RRSP deadlines, and life-stage moments. These are predictable demand drivers that RBC can build campaigns and product promotions around with lead time." },
       ],
     };
   }
-  if (tag === "delivery") {
+  if (tag === "fintech") {
     return {
-      impact: "Delivery platforms act as real-time proxies for consumer demand velocity. Order patterns, search trends, daypart shifts, and category rankings on UberEats, DoorDash, and SkipTheDishes reveal what consumers are actively craving — and where Pizza Pizza can compete on speed, value, and direct ordering rather than platform dependence alone.",
+      impact: "Digital banking platforms act as real-time proxies for customer behaviour and preference. App usage patterns, feature adoption rates, and digital channel preferences reveal how customers want to interact with their finances — and where RBC can compete on experience, convenience, and personalization rather than rate alone.",
       actions: [
-        { icon: TrendingUp, title: "Map Platform Demand to Pizza Pizza Opportunity", description: "Cross-reference delivery platform trending items and categories against Pizza Pizza's current menu and promotions. Identify gaps where demand is proven but Pizza Pizza's positioning could capture more share." },
-        { icon: Target, title: "Track Order Velocity as a Leading Indicator", description: "Rapid order volume growth on delivery platforms often precedes mainstream demand shifts. Flag trending items and daypart patterns for early promotional consideration and menu alignment." },
-        { icon: Shield, title: "Differentiate on Direct Ordering", description: "Delivery platforms compete on convenience but take 25-30% commission. Pizza Pizza's response should emphasise direct ordering through the app and website — better value for customers, better margins for the business." },
+        { icon: TrendingUp, title: "Map Digital Trends to RBC Opportunity", description: "Cross-reference digital banking trends and feature adoption against RBC's current digital experience. Identify gaps where customer demand is proven but RBC's positioning could capture more engagement." },
+        { icon: Target, title: "Track Adoption Velocity as a Leading Indicator", description: "Rapid feature adoption often precedes mainstream behaviour shifts. Flag trending digital behaviours for early product consideration and experience alignment." },
+        { icon: Shield, title: "Differentiate on Digital Experience", description: "Fintech competitors compete on convenience but lack the full-service relationship. RBC's response should emphasize the integrated digital experience — banking, investing, insurance, and rewards in one ecosystem." },
       ],
     };
   }
   if (tag === "social") {
     return {
-      impact: "Food discovery is increasingly community-driven. Reddit food communities — r/pizza, r/foodToronto, r/CanadianFood — and TikTok food creators are surfacing high-conviction opinions that drive real ordering behaviour. Unlike algorithmic feeds, these communities represent genuine food enthusiasm with detailed context on why a brand or item resonates. This matters because Pizza Pizza's marketing can align not just to what is trending, but to why consumers are passionate about it.",
+      impact: "Financial decision-making is increasingly community-driven. Reddit communities — r/PersonalFinanceCanada, r/investing — and TikTok FinTok creators are surfacing high-conviction opinions that influence real financial decisions. Unlike traditional advertising, these communities represent genuine financial enthusiasm with detailed context on why a product or institution resonates. This matters because RBC's marketing can align not just to what is trending, but to why consumers trust specific financial products.",
       actions: [
-        { icon: TrendingUp, title: "Align Marketing to Community Conversation", description: "If a pizza style, topping, or brand mention is gaining traction on Reddit or TikTok, ensure Pizza Pizza's marketing reflects the language and framing the community is using. Community-driven demand is high-conviction and specific." },
-        { icon: Target, title: "Monitor Community Sentiment Velocity", description: "Track which brands, items, and trends are gaining momentum across key food communities. High upvote counts and comment velocity on recommendation threads are leading indicators of mainstream demand." },
-        { icon: Shield, title: "Watch for Emerging Food Trends and Hacks", description: "Social food conversation often organises around hacks, customisations, and aesthetic presentations. These are marketable themes Pizza Pizza can build UGC campaigns and social content around." },
+        { icon: TrendingUp, title: "Align Marketing to Community Conversation", description: "If a product, feature, or financial strategy is gaining traction on Reddit or TikTok, ensure RBC's marketing reflects the language and framing the community is using. Community-driven interest is high-conviction and specific." },
+        { icon: Target, title: "Monitor Community Sentiment Velocity", description: "Track which brands, products, and financial strategies are gaining momentum across key communities. High upvote counts and comment velocity on recommendation threads are leading indicators of mainstream adoption." },
+        { icon: Shield, title: "Watch for Emerging Financial Trends", description: "Social financial conversation often organizes around tips, strategies, and product comparisons. These are marketable themes RBC can build educational content and social campaigns around." },
       ],
     };
   }
   if (tag === "sports") {
     return {
-      impact: "Pizza and sports are deeply connected in consumer behaviour. Game day ordering spikes, sports partnership ROI, and event-driven catering demand represent predictable, high-volume revenue opportunities. Monitoring sports calendars, partnership effectiveness, and fan engagement patterns helps Pizza Pizza capture the full value of sports-driven demand moments.",
+      impact: "Sports and financial services are connected through brand visibility, community engagement, and cultural relevance. Game day activations, sports partnership ROI, and event-driven brand awareness represent high-impact marketing opportunities. Monitoring sports calendars, partnership effectiveness, and fan engagement patterns helps RBC maximize the value of sports-driven brand moments.",
       actions: [
-        { icon: TrendingUp, title: "Align to Sports Calendar Demand", description: "Track upcoming sports events — NHL playoffs, Super Bowl, FIFA World Cup, March Madness — and ensure promotional campaigns, catering offers, and delivery capacity are positioned with lead time." },
-        { icon: Target, title: "Monitor Sports Partnership ROI", description: "Track brand recall, order frequency lift, and social engagement from sports partnerships and sponsorships. Optimise activation spend based on measured impact rather than awareness assumptions." },
-        { icon: Shield, title: "Position Pizza Pizza as the Game Day Destination", description: "Sports-driven pizza demand is massive and predictable. Pizza Pizza's delivery fleet, group ordering capabilities, and party platter options are competitive advantages worth amplifying across all sports moments." },
+        { icon: TrendingUp, title: "Align to Sports Calendar", description: "Track upcoming sports events — NHL playoffs, Olympics, community events — and ensure brand campaigns, activations, and digital content are positioned with lead time." },
+        { icon: Target, title: "Monitor Sports Partnership ROI", description: "Track brand recall, app downloads, account openings, and social engagement from sports partnerships and sponsorships. Optimize activation spend based on measured impact rather than awareness assumptions." },
+        { icon: Shield, title: "Position RBC as Community Champion", description: "Sports partnerships drive brand affinity beyond product marketing. RBC's community investment, youth programs, and grassroots sports initiatives are competitive advantages worth amplifying across all sports moments." },
       ],
     };
   }
   if (tag === "competitors") {
     return {
-      impact: "Competitor activity from Domino's, Pizza Nova, and Pizza Hut directly affects Pizza Pizza's market position, pricing perception, and customer acquisition. Promotional launches, expansion moves, and platform strategies from these competitors signal where the competitive pressure is intensifying — and where Pizza Pizza has an opportunity to differentiate or defend.",
+      impact: "Competitor activity from TD, BMO, Scotiabank, and CIBC directly affects RBC's market position, rate perception, and customer acquisition. Product launches, digital innovations, and marketing strategies from these competitors signal where competitive pressure is intensifying — and where RBC has an opportunity to differentiate or defend.",
       actions: [
-        { icon: TrendingUp, title: "Assess Competitive Threat Level", description: "Evaluate whether this competitor move targets a segment, daypart, or market where Pizza Pizza has significant share. Determine if it requires a defensive response or if Pizza Pizza's existing positioning is sufficient." },
-        { icon: Target, title: "Monitor Customer Response", description: "Track whether this competitor promotion is shifting order volume, app downloads, or search share in overlapping markets. Real-time delivery and ordering data will show impact faster than brand tracking studies." },
-        { icon: Shield, title: "Identify Differentiation Opportunity", description: "Every competitor move reveals their strategic priorities — and their blind spots. Identify where Pizza Pizza's strengths (direct ordering, loyalty program, delivery fleet, Canadian brand identity) create defensible advantages the competitor cannot easily replicate." },
+        { icon: TrendingUp, title: "Assess Competitive Threat Level", description: "Evaluate whether this competitor move targets a segment, product line, or market where RBC has significant share. Determine if it requires a defensive response or if RBC's existing positioning is sufficient." },
+        { icon: Target, title: "Monitor Customer Response", description: "Track whether this competitor promotion is shifting account openings, app downloads, or search share in overlapping markets. Digital engagement data will show impact faster than brand tracking studies." },
+        { icon: Shield, title: "Identify Differentiation Opportunity", description: "Every competitor move reveals their strategic priorities — and their blind spots. Identify where RBC's strengths (integrated platform, rewards ecosystem, wealth management depth, Canadian trust) create defensible advantages the competitor cannot easily replicate." },
       ],
     };
   }
   if (tag === "sponsorships") {
     return {
-      impact: "Pizza Pizza's corporate sponsorships with the Toronto Maple Leafs, PWHL, and BC Lions create high-visibility activation windows tied to fan passion and cultural moments. League milestones, playoff runs, player signings, and community events each represent opportunities to convert sponsorship investment into brand engagement, app downloads, and order volume. The key is activating in real time — fan emotions peak during these moments and fade quickly.",
+      impact: "RBC's corporate sponsorships create high-visibility activation windows tied to community passion and cultural moments. League milestones, playoff runs, community events, and cultural celebrations each represent opportunities to convert sponsorship investment into brand engagement, app downloads, and account openings. The key is activating in real time — emotional peaks during these moments fade quickly.",
       actions: [
-        { icon: TrendingUp, title: "Activate Around the Moment", description: "Coordinate real-time social content, push notifications, and geo-targeted promotions tied to this event. Fan engagement peaks during and immediately after key moments — speed of activation determines share of the demand spike." },
-        { icon: Target, title: "Leverage Partner Assets", description: "Use co-branded content, player appearances, and in-arena activations to extend reach beyond paid media. Sponsorship assets are most valuable when integrated into organic fan conversation, not just displayed as logos." },
-        { icon: Shield, title: "Measure Sponsorship ROI", description: "Track order volume, app downloads, loyalty sign-ups, and social engagement lift during and after activation windows. Build a sponsorship performance baseline to optimise future investment across the Maple Leafs, PWHL, and BC Lions partnerships." },
+        { icon: TrendingUp, title: "Activate Around the Moment", description: "Coordinate real-time social content, push notifications, and geo-targeted promotions tied to this event. Community engagement peaks during and immediately after key moments — speed of activation determines share of the attention." },
+        { icon: Target, title: "Leverage Partner Assets", description: "Use co-branded content, athlete appearances, and in-venue activations to extend reach beyond paid media. Sponsorship assets are most valuable when integrated into organic community conversation, not just displayed as logos." },
+        { icon: Shield, title: "Measure Sponsorship ROI", description: "Track account openings, app downloads, card applications, and social engagement lift during and after activation windows. Build a sponsorship performance baseline to optimize future investment across all partnership properties." },
       ],
     };
   }
   if (tag === "macro") {
     return {
-      impact: "Macro consumer and QSR conditions directly shape Pizza Pizza's performance pressure points: value perception, order frequency, channel mix, and promotional strategy. Canadian QSR commentary in early 2026 points to cautious spending, rising convenience expectations, and digital ordering channel shifting. Understanding these forces helps STRATIS connect external conditions to strategic response.",
+      impact: "Macro consumer and financial conditions directly shape RBC's performance pressure points: rate sensitivity, product demand mix, channel preferences, and marketing strategy. Canadian economic commentary in early 2026 points to interest rate shifts, housing market dynamics, and evolving savings behaviour. Understanding these forces helps STRATIS connect external conditions to strategic response.",
       actions: [
-        { icon: TrendingUp, title: "Adjust Strategy to Spending Climate", description: "If consumer confidence is declining or food-away-from-home spending is under pressure, shift messaging toward value, convenience, and everyday affordability — away from premium and impulse." },
-        { icon: Target, title: "Monitor Ordering Channel Shifts", description: "Track digital ordering adoption, delivery vs. pickup behaviour, and platform market share shifts. Changes in channel preference have direct implications for Pizza Pizza's marketing budget allocation." },
-        { icon: Shield, title: "Flag Seasonal Demand Signals Early", description: "Early indicators of holiday ordering patterns, sports season demand, and catering trends help Pizza Pizza calibrate promotional intensity, delivery capacity, and campaign timing." },
+        { icon: TrendingUp, title: "Adjust Strategy to Economic Climate", description: "If consumer confidence is declining or interest rates are shifting, adjust messaging toward financial security, savings tools, and long-term value — away from premium and discretionary products." },
+        { icon: Target, title: "Monitor Channel and Product Shifts", description: "Track digital banking adoption, product mix changes, and customer segment migration. Changes in how customers engage with financial services have direct implications for RBC's marketing budget allocation." },
+        { icon: Shield, title: "Flag Seasonal Demand Signals Early", description: "Early indicators of RRSP season activity, tax planning behaviour, and mortgage renewal cycles help RBC calibrate promotional intensity, staffing, and campaign timing." },
       ],
     };
   }
   // default
   return {
-    impact: "This development has strategic implications for Pizza Pizza's positioning. Staying ahead of market shifts, consumer behaviour changes, and competitive dynamics ensures Pizza Pizza can respond proactively rather than reactively.",
+    impact: "This development has strategic implications for RBC's positioning. Staying ahead of market shifts, consumer behaviour changes, and competitive dynamics ensures RBC can respond proactively rather than reactively.",
     actions: [
-      { icon: TrendingUp, title: "Assess Strategic Impact", description: "Evaluate how this development affects Pizza Pizza's current priorities and whether it warrants a change in approach across menu strategy, marketing, or operations." },
-      { icon: Target, title: "Cross-Reference with Other Signals", description: "Check whether this signal is being confirmed by other data sources — social conversation, ordering data, competitor behaviour — to determine confidence level before acting." },
+      { icon: TrendingUp, title: "Assess Strategic Impact", description: "Evaluate how this development affects RBC's current priorities and whether it warrants a change in approach across product strategy, marketing, or operations." },
+      { icon: Target, title: "Cross-Reference with Other Signals", description: "Check whether this signal is being confirmed by other data sources — social conversation, customer data, competitor behaviour — to determine confidence level before acting." },
       { icon: Shield, title: "Monitor for Escalation", description: "Track whether this signal is intensifying, stabilising, or fading. Set a review point to reassess impact and determine next steps." },
     ],
   };
@@ -505,7 +462,7 @@ export default function NewsPage() {
                   <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/10">
                     <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
                     <p className="text-xs text-red-300/80">
-                      <span className="font-semibold text-red-400">Competitor Alert:</span> This article involves <span className="font-semibold">{selectedArticle.competitor}</span>, a competing brand in Pizza Pizza&apos;s market.
+                      <span className="font-semibold text-red-400">Competitor Alert:</span> This article involves <span className="font-semibold">{selectedArticle.competitor}</span>, a competing brand in RBC&apos;s market.
                     </p>
                   </div>
                 )}
@@ -522,7 +479,7 @@ export default function NewsPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold">STRATIS Insight</h3>
-                    <p className="text-[10px] text-muted-foreground/60">What this means for Pizza Pizza</p>
+                    <p className="text-[10px] text-muted-foreground/60">What this means for RBC</p>
                   </div>
                 </div>
 

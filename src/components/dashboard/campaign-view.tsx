@@ -127,7 +127,7 @@ export function CampaignView() {
           </ResponsiveContainer>
           <div className="mt-3 space-y-2">
             <p className="text-xs text-muted-foreground">Top fatigued creatives:</p>
-            {['Sapphire Reserve Hero Video — 78/100', 'Lifestyle Carousel — 65/100', 'Performance Banner — 52/100'].map((c, i) => (
+            {['Avion Travel Rewards Hero Video — 78/100', 'Lifestyle Carousel — 65/100', 'Performance Banner — 52/100'].map((c, i) => (
               <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-muted/30">
                 <span>{c.split(' — ')[0]}</span>
                 <Badge variant={i === 0 ? 'destructive' : 'secondary'} className="text-[10px]">{c.split(' — ')[1]}</Badge>

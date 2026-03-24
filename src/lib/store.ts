@@ -4,7 +4,11 @@ import type {
   DateRange,
   DateRangePreset,
   UserRole,
-  RegionId,
+  DivisionId,
+  AgencyId,
+  ProductLineId,
+  AudienceId,
+  GeoId,
   ChannelId,
   CampaignObjective,
   CampaignStatus,
@@ -76,15 +80,19 @@ function writeStorage(state: PersistedState): void {
 export interface AppState {
   dateRange: DateRange;
   compareEnabled: boolean;
-  selectedRegions: RegionId[];
-  selectedCountries: string[];
+  selectedDivisions: DivisionId[];
+  selectedAgencies: AgencyId[];
+  selectedProductLines: ProductLineId[];
+  selectedAudiences: AudienceId[];
+  selectedGeos: GeoId[];
   selectedChannels: ChannelId[];
   selectedCampaigns: string[];
   selectedObjectives: CampaignObjective[];
   selectedCampaignStatuses: CampaignStatus[];
   attributionModel: AttributionModel;
   role: UserRole;
-  selectedRegion: RegionId | null;
+  selectedDivision: DivisionId | null;
+  selectedProductLine: ProductLineId | null;
   selectedCampaign: string | null;
   customKpis: KPIKey[];
   selectedFunnel: FunnelStage;
@@ -95,15 +103,18 @@ export interface AppState {
   actionLog: ActionLogEntry[];
   isLoading: boolean;
   approvedDrawerOpen: boolean;
+  molecularFilterOpen: boolean;
+  molecularSelections: string[];
 
   setDateRange: (range: DateRange) => void;
   setDatePreset: (preset: DateRangePreset) => void;
   toggleCompare: () => void;
   setRole: (role: UserRole) => void;
-  setSelectedRegion: (region: RegionId | null) => void;
-  setSelectedCampaign: (campaign: string | null) => void;
-  setSelectedRegions: (regions: RegionId[]) => void;
-  setSelectedCountries: (countries: string[]) => void;
+  setSelectedDivisions: (divisions: DivisionId[]) => void;
+  setSelectedAgencies: (agencies: AgencyId[]) => void;
+  setSelectedProductLines: (productLines: ProductLineId[]) => void;
+  setSelectedAudiences: (audiences: AudienceId[]) => void;
+  setSelectedGeos: (geos: GeoId[]) => void;
   setSelectedChannels: (channels: ChannelId[]) => void;
   setSelectedCampaigns: (campaigns: string[]) => void;
   setSelectedObjectives: (objectives: CampaignObjective[]) => void;
@@ -113,14 +124,20 @@ export interface AppState {
   setFunnel: (funnel: FunnelStage) => void;
   setLoading: (loading: boolean) => void;
   setApprovedDrawerOpen: (open: boolean) => void;
+  setMolecularFilterOpen: (open: boolean) => void;
+  setMolecularSelections: (selections: string[]) => void;
+  setSelectedDivision: (division: DivisionId | null) => void;
+  setSelectedProductLine: (productLine: ProductLineId | null) => void;
+  setSelectedCampaign: (campaign: string | null) => void;
 
   approveInsight: (id: string, rationale?: string) => void;
   dismissInsight: (id: string, reason: DismissReason) => void;
   snoozeInsight: (id: string, days: number) => void;
   reviewInsight: (id: string) => void;
 
-  drillToRegion: (region: RegionId) => void;
-  drillToCampaign: (region: RegionId, campaignId: string) => void;
+  drillToDivision: (division: DivisionId) => void;
+  drillToProduct: (product: ProductLineId) => void;
+  drillToCampaign: (campaignId: string) => void;
   drillUp: () => void;
 
   hydrateFromStorage: () => void;
@@ -132,15 +149,19 @@ const DEFAULT_DATE_RANGE = computeDateRange('30d');
 export const useAppStore = create<AppState>()((set, get) => ({
   dateRange: DEFAULT_DATE_RANGE,
   compareEnabled: false,
-  selectedRegions: [],
-  selectedCountries: [],
+  selectedDivisions: [],
+  selectedAgencies: [],
+  selectedProductLines: [],
+  selectedAudiences: [],
+  selectedGeos: [],
   selectedChannels: [],
   selectedCampaigns: [],
   selectedObjectives: [],
   selectedCampaignStatuses: [],
   attributionModel: 'last-click',
   role: 'agency',
-  selectedRegion: null,
+  selectedDivision: null,
+  selectedProductLine: null,
   selectedCampaign: null,
   customKpis: [...DEFAULT_BRAND_KPIS],
   selectedFunnel: 'all',
@@ -151,6 +172,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   actionLog: [],
   isLoading: false,
   approvedDrawerOpen: false,
+  molecularFilterOpen: false,
+  molecularSelections: [],
 
   setDateRange: (range) => { set({ dateRange: range }); get().syncToStorage(); },
   setDatePreset: (preset) => {
@@ -163,8 +186,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
   toggleCompare: () => { set((s) => ({ compareEnabled: !s.compareEnabled })); get().syncToStorage(); },
   setRole: (role) => { set({ role }); get().syncToStorage(); },
-  setSelectedRegions: (regions) => set({ selectedRegions: regions }),
-  setSelectedCountries: (countries) => set({ selectedCountries: countries }),
+  setSelectedDivisions: (divisions) => set({ selectedDivisions: divisions }),
+  setSelectedAgencies: (agencies) => set({ selectedAgencies: agencies }),
+  setSelectedProductLines: (productLines) => set({ selectedProductLines: productLines }),
+  setSelectedAudiences: (audiences) => set({ selectedAudiences: audiences }),
+  setSelectedGeos: (geos) => set({ selectedGeos: geos }),
   setSelectedChannels: (channels) => set({ selectedChannels: channels }),
   setSelectedCampaigns: (campaigns) => set({ selectedCampaigns: campaigns }),
   setSelectedObjectives: (objectives) => set({ selectedObjectives: objectives }),
@@ -174,7 +200,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setFunnel: (funnel) => { set({ selectedFunnel: funnel, customKpis: [...FUNNEL_CUSTOM_KPIS[funnel]] }); get().syncToStorage(); },
   setLoading: (loading) => set({ isLoading: loading }),
   setApprovedDrawerOpen: (open) => set({ approvedDrawerOpen: open }),
-  setSelectedRegion: (region) => set({ selectedRegion: region }),
+  setMolecularFilterOpen: (open) => set({ molecularFilterOpen: open }),
+  setMolecularSelections: (selections) => set({ molecularSelections: selections }),
+  setSelectedDivision: (division) => set({ selectedDivision: division }),
+  setSelectedProductLine: (productLine) => set({ selectedProductLine: productLine }),
   setSelectedCampaign: (campaign) => set({ selectedCampaign: campaign }),
 
   approveInsight: (id, rationale) => {
@@ -217,12 +246,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get().syncToStorage();
   },
 
-  drillToRegion: (region) => set({ selectedRegion: region, selectedCampaign: null }),
-  drillToCampaign: (region, campaignId) => set({ selectedRegion: region, selectedCampaign: campaignId }),
+  drillToDivision: (division) => set({ selectedDivision: division, selectedProductLine: null, selectedCampaign: null }),
+  drillToProduct: (product) => set({ selectedProductLine: product, selectedCampaign: null }),
+  drillToCampaign: (campaignId) => set({ selectedCampaign: campaignId }),
   drillUp: () => {
-    const { selectedCampaign, selectedRegion } = get();
+    const { selectedCampaign, selectedProductLine, selectedDivision } = get();
     if (selectedCampaign) { set({ selectedCampaign: null }); }
-    else if (selectedRegion) { set({ selectedRegion: null }); }
+    else if (selectedProductLine) { set({ selectedProductLine: null }); }
+    else if (selectedDivision) { set({ selectedDivision: null }); }
   },
 
   hydrateFromStorage: () => {

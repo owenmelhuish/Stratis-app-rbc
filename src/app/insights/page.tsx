@@ -18,7 +18,7 @@ import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, ReferenceLine, ReferenceArea,
 } from 'recharts';
 import {
-  REGION_LABELS, CHANNEL_LABELS,
+  DIVISION_LABELS, CHANNEL_LABELS,
   type InsightCategory, type InsightStatus, type Insight,
 } from '@/types';
 import { cn } from '@/lib/utils';
@@ -61,7 +61,7 @@ const SCOPE_GROUPS: ScopeGroup[] = [
     label: 'CROSS CHANNEL',
     description: 'Portfolio-level allocation and efficiency signals',
     filter: (item) =>
-      (item.scope === 'brand' || item.scope === 'region') && item.category !== 'creative',
+      (item.scope === 'brand' || item.scope === 'division' || item.scope === 'product') && item.category !== 'creative',
   },
   {
     key: 'ad',
