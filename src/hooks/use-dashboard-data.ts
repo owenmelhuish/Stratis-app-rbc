@@ -94,7 +94,8 @@ export interface DashboardData {
   }>;
   sankeyData: {
     divisions: Array<{ id: string; label: string; spend: number }>;
-    products: Array<{ id: string; label: string; spend: number; divisionId: string }>;
+    agencies: Array<{ id: string; label: string; spend: number }>;
+    products: Array<{ id: string; label: string; spend: number; divisionId: string; agencyId: string }>;
     channels: Array<{ id: string; label: string; spend: number }>;
     revenue: number;
     estimatedWaste: number;
@@ -600,40 +601,43 @@ export function useDashboardData(): DashboardData {
       };
     }).filter(Boolean) as DashboardData['agencyData'];
 
-    // ===== Sankey Data =====
+    // ===== Sankey Data (5 columns) =====
     const sankeyDivMap: Record<string, number> = {};
-    const sankeyProdMap: Record<string, { spend: number; divisionId: string }> = {};
+    const sankeyAgencyMap: Record<string, number> = {};
+    const sankeyProdMap: Record<string, { spend: number; divisionId: string; agencyId: string }> = {};
     const sankeyChanMap: Record<string, { spend: number; revenue: number }> = {};
     const sankeyFlowMap: Record<string, number> = {};
 
     for (const camp of viewCampaigns) {
       let campTotal = 0;
       for (const ch of camp.channels) {
+        if (channelFilter && !channelFilter.includes(ch)) continue;
         const chData = store.dailyData[camp.id]?.[ch];
         if (!chData) continue;
         const days = filterDailyByDate(chData, start, end);
         const chSpend = days.reduce((s, d) => s + d.spend, 0);
         const chRev = days.reduce((s, d) => s + d.revenue, 0);
         campTotal += chSpend;
-        // Channel totals
         if (!sankeyChanMap[ch]) sankeyChanMap[ch] = { spend: 0, revenue: 0 };
         sankeyChanMap[ch].spend += chSpend;
         sankeyChanMap[ch].revenue += chRev;
-        // Product → Channel flow
+        // Layer 3: Product → Channel
         const pcKey = `prod-${camp.productLine}|ch-${ch}`;
         sankeyFlowMap[pcKey] = (sankeyFlowMap[pcKey] || 0) + chSpend;
       }
-      // Division total
+      if (campTotal === 0) continue;
       sankeyDivMap[camp.division] = (sankeyDivMap[camp.division] || 0) + campTotal;
-      // Product total
-      if (!sankeyProdMap[camp.productLine]) sankeyProdMap[camp.productLine] = { spend: 0, divisionId: camp.division };
+      sankeyAgencyMap[camp.agency] = (sankeyAgencyMap[camp.agency] || 0) + campTotal;
+      if (!sankeyProdMap[camp.productLine]) sankeyProdMap[camp.productLine] = { spend: 0, divisionId: camp.division, agencyId: camp.agency };
       sankeyProdMap[camp.productLine].spend += campTotal;
-      // Division → Product flow
-      const dpKey = `div-${camp.division}|prod-${camp.productLine}`;
-      sankeyFlowMap[dpKey] = (sankeyFlowMap[dpKey] || 0) + campTotal;
+      // Layer 1: Division → Agency
+      const daKey = `div-${camp.division}|agency-${camp.agency}`;
+      sankeyFlowMap[daKey] = (sankeyFlowMap[daKey] || 0) + campTotal;
+      // Layer 2: Agency → Product
+      const apKey = `agency-${camp.agency}|prod-${camp.productLine}`;
+      sankeyFlowMap[apKey] = (sankeyFlowMap[apKey] || 0) + campTotal;
     }
 
-    // Channel → Outcome flows
     let sankeyRevenue = 0;
     let sankeyWaste = 0;
     for (const [ch, { spend: chSpend, revenue: chRev }] of Object.entries(sankeyChanMap)) {
@@ -653,7 +657,8 @@ export function useDashboardData(): DashboardData {
 
     const sankeyData: DashboardData['sankeyData'] = {
       divisions: Object.entries(sankeyDivMap).map(([id, spend]) => ({ id: `div-${id}`, label: DIVISION_LABELS[id as DivisionId] || id, spend })),
-      products: Object.entries(sankeyProdMap).map(([id, { spend, divisionId }]) => ({ id: `prod-${id}`, label: PRODUCT_LINE_LABELS[id as ProductLineId] || id, spend, divisionId })),
+      agencies: Object.entries(sankeyAgencyMap).map(([id, spend]) => ({ id: `agency-${id}`, label: AGENCY_LABELS[id as AgencyId] || id, spend })),
+      products: Object.entries(sankeyProdMap).map(([id, { spend, divisionId, agencyId }]) => ({ id: `prod-${id}`, label: PRODUCT_LINE_LABELS[id as ProductLineId] || id, spend, divisionId, agencyId })),
       channels: Object.entries(sankeyChanMap).map(([id, { spend }]) => ({ id: `ch-${id}`, label: CHANNEL_LABELS[id as ChannelId] || id, spend })),
       revenue: sankeyRevenue,
       estimatedWaste: sankeyWaste,
