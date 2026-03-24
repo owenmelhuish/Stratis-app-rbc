@@ -134,6 +134,7 @@ export function BudgetSankey({ data }: Props) {
       d: string; thickness: number;
       srcColor: string; tgtColor: string;
       sourceId: string; targetId: string;
+      sx: number; tx: number;
     }
 
     const pathList: FP[] = [];
@@ -172,6 +173,7 @@ export function BudgetSankey({ data }: Props) {
           tgtColor: tgt.color,
           sourceId: f.source,
           targetId: f.target,
+          sx, tx,
         });
       }
     }
@@ -222,7 +224,7 @@ export function BudgetSankey({ data }: Props) {
         <svg viewBox={`0 0 ${layout.W} ${layout.H}`} width="100%" className="overflow-visible">
           <defs>
             {layout.pathList.map((p, i) => (
-              <linearGradient key={`sg-${i}`} id={`sg-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient key={`sg-${i}`} id={`sg-${i}`} gradientUnits="userSpaceOnUse" x1={p.sx} y1={0} x2={p.tx} y2={0}>
                 <stop offset="0%" stopColor={p.srcColor} />
                 <stop offset="100%" stopColor={p.tgtColor} />
               </linearGradient>

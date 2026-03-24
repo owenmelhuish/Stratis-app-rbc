@@ -400,9 +400,9 @@ export function BrandView() {
       <ConversionValue data={data} compareEnabled={compareEnabled} />
 
       {/* 8. Trend Chart + Channel Mix */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 items-stretch">
         <div className="xl:col-span-3">
-          <TrendChart data={data.timeSeries} title="Global Performance Trend" defaultMetrics={['spend', 'conversions', 'roas']} />
+          <TrendChart data={data.timeSeries} title="KPI Relationship Mapping" defaultMetrics={['spend', 'conversions', 'roas']} className="h-full" />
         </div>
         <div className="xl:col-span-2">
           <ChannelMixChart data={data.channelData} title="Channel Mix" />

@@ -11,6 +11,7 @@ interface TrendChartProps {
   availableMetrics?: KPIKey[];
   title?: string;
   height?: number;
+  className?: string;
 }
 
 // Semantic colors: spend-like = salmon/red, growth = teal/green, neutral = blue/purple
@@ -34,7 +35,7 @@ function getMetricColor(metric: string, index: number): string {
   return METRIC_COLORS[metric] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
 
-export function TrendChart({ data, defaultMetrics = ['spend', 'conversions', 'roas'], availableMetrics, title = 'Performance Trend', height = 320 }: TrendChartProps) {
+export function TrendChart({ data, defaultMetrics = ['spend', 'conversions', 'roas'], availableMetrics, title = 'Performance Trend', height = 320, className }: TrendChartProps) {
   const [activeMetrics, setActiveMetrics] = useState<KPIKey[]>(defaultMetrics);
   const metrics = availableMetrics || ['spend', 'impressions', 'clicks', 'conversions', 'revenue', 'roas', 'ctr', 'cpm', 'cpa'] as KPIKey[];
 
@@ -45,7 +46,7 @@ export function TrendChart({ data, defaultMetrics = ['spend', 'conversions', 'ro
   };
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card p-6">
+    <div className={cn("rounded-xl border border-border/40 bg-card p-6 flex flex-col", className)}>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
         <h3 className="text-sm font-semibold tracking-wide">{title}</h3>
         <div className="flex flex-wrap gap-1">
@@ -75,7 +76,8 @@ export function TrendChart({ data, defaultMetrics = ['spend', 'conversions', 'ro
           })}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={height}>
+      <div className="flex-1 min-h-0">
+      <ResponsiveContainer width="100%" height={className?.includes('h-full') ? '100%' : height}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
           <defs>
             {activeMetrics.map((m, i) => {
@@ -147,6 +149,7 @@ export function TrendChart({ data, defaultMetrics = ['spend', 'conversions', 'ro
           })}
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
