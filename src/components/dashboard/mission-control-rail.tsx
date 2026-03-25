@@ -269,9 +269,6 @@ function SupportCard({ label, metricKey, value, format, deltaPct, sparkData, sta
         </svg>
       </div>
 
-      <div className="absolute bottom-2 left-3 z-10">
-        <span className="block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getDotColor(state) }} />
-      </div>
     </div>
   );
 }
