@@ -187,7 +187,8 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
         const date = format(subDays(END_DATE, DATA_DAYS - 1 - d), 'yyyy-MM-dd');
         const dayOfWeek = new Date(date).getDay();
         const weekendMult = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.75 : 1.0;
-        const seasonality = 1 + 0.1 * Math.sin((d / DATA_DAYS) * Math.PI * 2);
+        const seasonality = 1 + 0.03 * Math.sin((d / DATA_DAYS) * Math.PI * 4); // gentle ripple, 2 cycles
+        const growthTrend = 0.88 + (d / DATA_DAYS) * 0.24; // starts lower, ends higher — clear upward trajectory
 
         // Check events
         let eventSpendMult = 1, eventCvrMult = 1, eventEngageMult = 1;
@@ -201,7 +202,7 @@ function generateDailyData(): Record<string, Record<string, DailyMetrics[]>> {
         }
 
         const noise = 1 + gaussian() * profile.volatility;
-        const spendBase = profile.baseSpend * campaign.budgetMultiplier * geoMult * weekendMult * seasonality * eventSpendMult * Math.max(0.3, noise);
+        const spendBase = profile.baseSpend * campaign.budgetMultiplier * geoMult * weekendMult * seasonality * growthTrend * eventSpendMult * Math.max(0.3, noise);
         const spend = Math.max(10, spendBase);
 
         const cpm = randBetween(profile.cpmRange[0], profile.cpmRange[1]) * (1 + gaussian() * 0.1);

@@ -1,7 +1,8 @@
 "use client";
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import type { DashboardData } from '@/hooks/use-dashboard-data';
 
@@ -18,6 +19,36 @@ function rankColor(rank: number): string {
   if (rank <= 4) return 'bg-blue-500/12 text-blue-400';
   if (rank <= 6) return 'bg-purple-500/12 text-purple-400';
   return 'bg-amber-500/12 text-amber-400';
+}
+
+// ─── Tooltip with 150ms hover delay ───
+function InfoTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEnter = useCallback(() => {
+    timerRef.current = setTimeout(() => setShow(true), 150);
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setShow(false);
+  }, []);
+
+  return (
+    <div className="relative inline-flex">
+      <Info
+        className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      />
+      {show && (
+        <div className="absolute top-full left-1 mt-1 bg-card border border-border/60 rounded-lg p-3 shadow-lg text-[11px] text-muted-foreground leading-relaxed w-[320px] z-50">
+          {text}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Sparkline({ data, color, declining }: { data: number[]; color: string; declining?: boolean }) {
@@ -65,9 +96,12 @@ export function ConversionValue({ data, compareEnabled }: Props) {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="text-sm font-semibold">Conversion value intelligence</h3>
-          <p className="text-xs text-muted-foreground">
-            Average revenue per conversion by product line — proxy for customer acquisition value
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-xs text-muted-foreground">
+              Average revenue per conversion by product line — proxy for customer acquisition value
+            </p>
+            <InfoTooltip text="Revenue per conversion is calculated by dividing total attributed revenue by total platform-reported conversions for each product line. Attributed revenue is an estimated value based on the average expected first-year value of each product type (e.g., credit card annual spend, mortgage origination value, investment account size). These are modeled estimates, not actual tracked revenue. Conversions are sourced directly from platform conversion tracking (account openings, application completions, form submissions). The trend compares the current period's ratio against the prior period of equal length." />
+          </div>
         </div>
         <span className="text-xs text-muted-foreground">{compareEnabled ? 'vs prior period' : ''}</span>
       </div>
@@ -144,9 +178,19 @@ export function ConversionValue({ data, compareEnabled }: Props) {
                   <th className="text-left py-2 pr-3 text-[10px] text-muted-foreground font-medium">Product Line</th>
                   <th className="text-right py-2 px-2 text-[10px] text-muted-foreground font-medium">Conversions</th>
                   <th className="text-right py-2 px-2 text-[10px] text-muted-foreground font-medium">Revenue</th>
-                  <th className="text-right py-2 px-2 text-[10px] text-muted-foreground font-medium">Rev / Conv</th>
+                  <th className="text-right py-2 px-2 text-[10px] text-muted-foreground font-medium">
+                    <span className="inline-flex items-center gap-1">
+                      Rev / Conv
+                      <InfoTooltip text="Total attributed revenue ÷ total conversions for this product line. Revenue estimates are modeled based on average first-year customer value per product type — they do not represent actual realized revenue." />
+                    </span>
+                  </th>
                   <th className="text-right py-2 px-2 text-[10px] text-muted-foreground font-medium">Trend</th>
-                  <th className="text-center py-2 pl-2 text-[10px] text-muted-foreground font-medium">Signal</th>
+                  <th className="text-center py-2 pl-2 text-[10px] text-muted-foreground font-medium">
+                    <span className="inline-flex items-center gap-1 justify-center">
+                      Signal
+                      <InfoTooltip text="Signal is derived from two factors: the product's revenue-per-conversion rank relative to all products (top 25% = high value), and the period-over-period trend direction (>15% improving, -5% to +5% stable, <-15% declining)." />
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

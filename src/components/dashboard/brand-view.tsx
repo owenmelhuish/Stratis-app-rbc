@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useDashboardData, type StateDatum } from '@/hooks/use-dashboard-data';
 import { useAppStore } from '@/lib/store';
-import { HeroKPICard } from '@/components/shared/hero-kpi-card';
+import { MissionControlRail } from '@/components/dashboard/mission-control-rail';
 import { TrendChart } from '@/components/shared/trend-chart';
 import { ChannelMixChart } from '@/components/shared/channel-mix-chart';
 import { CampaignOverviewChart } from '@/components/shared/campaign-overview-chart';
@@ -12,20 +12,10 @@ import { DataTableWrapper, type Column } from '@/components/shared/data-table-wr
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Settings2, TrendingUp, TrendingDown, AlertTriangle, Zap, Target, DollarSign, BarChart3, Activity, Eye, ChevronLeft, ChevronRight, Image, Layers } from 'lucide-react';
-import { KPI_CONFIGS, CHANNEL_LABELS, DIVISION_LABELS, FUNNEL_HERO_KPIS, type KPIKey, type ChannelId, type DivisionId, type AggregatedKPIs } from '@/types';
+import { TrendingUp, TrendingDown, AlertTriangle, Zap, Target, DollarSign, BarChart3, Activity, Eye, ChevronLeft, ChevronRight, Image, Layers } from 'lucide-react';
+import { CHANNEL_LABELS, DIVISION_LABELS, type ChannelId, type DivisionId, type AggregatedKPIs } from '@/types';
 import { formatCurrency, formatKPIValue, formatPercent } from '@/lib/format';
 import { ComparisonDelta } from '@/components/shared/comparison-delta';
-
-const HERO_COLORS: Record<string, string> = {
-  spend: '#e07060', cpm: '#6b8aad', roas: '#50b89a',
-  impressions: '#50b89a', reach: '#8b7ec8',
-  clicks: '#50b89a', ctr: '#6b8aad', engagementRate: '#8b7ec8',
-  conversions: '#50b89a', cpa: '#e07060',
-};
 
 // ─── Creative / Ad Set Data ─────────────────────────────────────────────────
 
@@ -272,67 +262,15 @@ const stateColumns: Column<StateDatum>[] = [
 
 export function BrandView() {
   const data = useDashboardData();
-  const { customKpis, setCustomKpis, compareEnabled, selectedFunnel } = useAppStore();
-  const heroKpis = FUNNEL_HERO_KPIS[selectedFunnel];
+  const { compareEnabled } = useAppStore();
   const drillToDivision = useAppStore(s => s.drillToDivision);
-  const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
-
-  const toggleKpi = (key: KPIKey) => {
-    const next = customKpis.includes(key) ? customKpis.filter(k => k !== key) : [...customKpis, key];
-    setCustomKpis(next);
-  };
 
   const sortedStateData = [...data.stateData].sort((a, b) => b.spend - a.spend);
 
   return (
     <div className="space-y-8">
-      {/* Hero KPI Cards */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Key Metrics</h2>
-          <Dialog open={kpiDialogOpen} onOpenChange={setKpiDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs"><Settings2 className="h-3 w-3 mr-1" /> Customize KPIs</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Customize Dashboard KPIs</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-2 gap-2 mt-4 max-h-80 overflow-auto">
-                {KPI_CONFIGS.map(config => (
-                  <div key={config.key} className="flex items-center gap-2 p-2 rounded hover:bg-muted">
-                    <Checkbox id={config.key} checked={customKpis.includes(config.key)} onCheckedChange={() => toggleKpi(config.key)} />
-                    <Label htmlFor={config.key} className="text-sm cursor-pointer">{config.label}</Label>
-                  </div>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {heroKpis.map((key) => {
-            const config = KPI_CONFIGS.find(c => c.key === key);
-            if (!config) return null;
-            const value = data.currentKPIs[key] as number;
-            const prev = data.previousKPIs ? data.previousKPIs[key] as number : undefined;
-            const delta = prev !== undefined ? value - prev : undefined;
-            const deltaPercent = prev !== undefined && prev !== 0 ? ((value - prev) / prev) * 100 : undefined;
-            const sparklineData = data.timeSeries.slice(-14).map(d => ({ value: d[key] as number }));
-
-            return (
-              <HeroKPICard
-                key={key}
-                config={config}
-                value={value}
-                delta={compareEnabled ? delta : undefined}
-                deltaPercent={compareEnabled ? deltaPercent : undefined}
-                sparklineData={sparklineData}
-                accentColor={HERO_COLORS[key] || '#f97316'}
-              />
-            );
-          })}
-        </div>
-
-      </div>
+      {/* Mission Control KPI Rail */}
+      <MissionControlRail data={data} compareEnabled={compareEnabled} />
 
       {/* 2. Full-Funnel Velocity Pipeline */}
       <FunnelVelocity data={data} compareEnabled={compareEnabled} />

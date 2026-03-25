@@ -1,10 +1,18 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import type { DashboardData } from '@/hooks/use-dashboard-data';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Info } from 'lucide-react';
 
 const STAGE_COLORS: Record<string, string> = {
+  awareness: '#a0a0a0',
+  consideration: '#909090',
+  application: '#808080',
+  conversion: '#707070',
+  activation: '#606060',
+};
+
+const STAGE_ACCENT_COLORS: Record<string, string> = {
   awareness: '#378ADD',
   consideration: '#7F77DD',
   application: '#1D9E75',
@@ -12,10 +20,38 @@ const STAGE_COLORS: Record<string, string> = {
   activation: '#EF9F27',
 };
 
+const STAGE_TOOLTIPS: Record<string, string> = {
+  awareness: 'Total impressions delivered across all awareness-objective campaigns. Represents estimated ad exposure volume, not unique individuals reached.',
+  consideration: 'Total clicks generated across all consideration-objective campaigns. Represents active engagement actions from platform reporting.',
+  application: 'Total leads reported across all conversion-objective campaigns. Derived from platform-reported lead events and form submissions.',
+  conversion: 'Total conversions reported across all conversion and retention campaigns. Based on platform conversion tracking (e.g., account openings, applications completed).',
+  activation: 'Estimated active accounts derived from conversion volume using an industry benchmark activation rate of 73%. This is a modeled estimate, not a tracked metric.',
+};
+
+const GATE_TOOLTIP = 'Ratio of next stage metric to current stage metric across their respective campaign sets. Note: these stages represent aggregate campaign metrics, not individual user journey tracking.';
+
 function formatVolume(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return n.toLocaleString();
+}
+
+function InfoTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative inline-flex">
+      <Info
+        className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      />
+      {show && (
+        <div className="absolute top-full left-1 mt-1 bg-card border border-border/60 rounded-lg p-3 shadow-lg text-[11px] text-muted-foreground leading-relaxed w-[320px] z-50">
+          {text}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface Props {
@@ -44,12 +80,19 @@ export function FunnelVelocity({ data, compareEnabled }: Props) {
           <div className="flex items-stretch gap-1">
             {stages.map((stage, i) => {
               const color = STAGE_COLORS[stage.id] || '#888';
+              const accent = STAGE_ACCENT_COLORS[stage.id] || color;
+              const tooltip = STAGE_TOOLTIPS[stage.id];
               return (
                 <React.Fragment key={stage.id}>
                   <div
-                    className="flex-1 rounded-lg p-4 min-w-0"
-                    style={{ backgroundColor: `${color}1F` }}
+                    className="relative flex-1 rounded-lg p-4 min-w-0 border-l-2"
+                    style={{ backgroundColor: `${color}1F`, borderLeftColor: `${accent}80` }}
                   >
+                    {tooltip && (
+                      <div className="absolute top-2.5 right-2.5">
+                        <InfoTooltip text={tooltip} />
+                      </div>
+                    )}
                     <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color }}>{stage.label}</p>
                     <p className="text-xl font-bold tabular-nums">{formatVolume(stage.volume)}</p>
                     {stage.topChannels.length > 0 && (
@@ -81,9 +124,12 @@ export function FunnelVelocity({ data, compareEnabled }: Props) {
                   <p className="text-[10px] text-muted-foreground capitalize mb-1">
                     {gate.from} → {gate.to}
                   </p>
-                  <p className="text-sm font-bold tabular-nums">
-                    {gate.conversionRate.toFixed(1)}%
-                  </p>
+                  <div className="inline-flex items-center gap-1.5">
+                    <p className="text-sm font-bold tabular-nums">
+                      {gate.conversionRate.toFixed(1)}%
+                    </p>
+                    <InfoTooltip text={GATE_TOOLTIP} />
+                  </div>
                   {delta !== null && (
                     <p className={`text-[10px] mt-0.5 ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}pp vs prior

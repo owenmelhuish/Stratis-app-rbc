@@ -59,7 +59,7 @@ function Atom({ node, isSelected, isLit, hasSelection, onSelect, onHover }: Atom
     // Outer sphere opacity
     if (outerRef.current) {
       const mat = outerRef.current.material as THREE.MeshStandardMaterial;
-      const targetOp = (hasSelection && !isLit && !isSelected) ? 0.04 : isSelected ? 0.35 : 0.25;
+      const targetOp = (hasSelection && !isLit && !isSelected) ? 0.12 : isSelected ? 0.35 : 0.25;
       mat.opacity += (targetOp - mat.opacity) * 0.08;
       mat.emissiveIntensity = isSelected ? 0.8 + Math.sin(t * 3) * 0.2 : hovered ? 0.5 : isLit ? 0.3 : 0.1;
     }
@@ -67,7 +67,7 @@ function Atom({ node, isSelected, isLit, hasSelection, onSelect, onHover }: Atom
     // Core opacity
     if (coreRef.current) {
       const mat = coreRef.current.material as THREE.MeshStandardMaterial;
-      const targetOp = (hasSelection && !isLit && !isSelected) ? 0.15 : 1.0;
+      const targetOp = (hasSelection && !isLit && !isSelected) ? 0.35 : 1.0;
       mat.opacity += (targetOp - mat.opacity) * 0.08;
       mat.emissiveIntensity = isSelected ? 1.0 : hovered ? 0.6 : isLit ? 0.4 : 0.15;
     }
@@ -91,7 +91,7 @@ function Atom({ node, isSelected, isLit, hasSelection, onSelect, onHover }: Atom
     document.body.style.cursor = 'auto';
   }, [onHover]);
 
-  const labelOpacity = (hasSelection && !isLit && !isSelected) ? 0.1 : isSelected ? 1.0 : isLit ? 0.85 : 0.5;
+  const labelOpacity = (hasSelection && !isLit && !isSelected) ? 0.3 : isSelected ? 1.0 : isLit ? 0.85 : 0.5;
 
   return (
     <group ref={groupRef}>

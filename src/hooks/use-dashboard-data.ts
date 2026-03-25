@@ -81,11 +81,13 @@ export interface DashboardData {
     health: 'healthy' | 'watch' | 'over-saturated' | 'under-invested';
     action: 'scale' | 'hold' | 'reduce' | 'grow';
   }>;
-  frequencyData: {
-    audiences: AudienceId[]; channels: ChannelId[];
+  investmentDistData: {
+    audiences: AudienceId[];
+    channels: ChannelId[];
     matrix: Record<string, Record<string, number>>;
     totals: Record<string, number>;
-    statuses: Record<string, 'optimal' | 'elevated' | 'over-exposed' | 'under-reached'>;
+    channelTotals: Record<string, number>;
+    diversification: Record<string, 'concentrated' | 'balanced' | 'fragmented'>;
   };
   agencyData: Array<{
     id: AgencyId; label: string; managedSpend: number; campaignCount: number;
@@ -506,62 +508,57 @@ export function useDashboardData(): DashboardData {
       return { id: audId, label: AUDIENCE_LABELS[audId], shareOfSpend, roas, marginalReturn, saturation, health, action };
     });
 
-    // ===== Channel Frequency Data (spend-based model) =====
-    const AUDIENCE_SIZE_ESTIMATES: Record<string, number> = {
-      'young-professionals': 4_500_000, 'families': 5_200_000, 'new-canadians': 1_200_000,
-      'high-net-worth': 800_000, 'students': 2_800_000, 'retirees': 3_500_000,
-      'business-owners': 1_500_000, 'mass-market': 12_000_000,
-    };
-    const CHANNEL_REACH_RATES: Record<string, Record<string, number>> = {
-      'young-professionals': { 'instagram': 0.75, 'facebook': 0.65, 'tiktok': 0.60, 'google-search': 0.80, 'ttd': 0.40, 'ctv': 0.35, 'spotify': 0.55, 'linkedin': 0.50, 'ooh': 0.30 },
-      'families': { 'instagram': 0.65, 'facebook': 0.70, 'tiktok': 0.30, 'google-search': 0.75, 'ttd': 0.45, 'ctv': 0.55, 'spotify': 0.35, 'linkedin': 0.25, 'ooh': 0.40 },
-      'new-canadians': { 'instagram': 0.70, 'facebook': 0.75, 'tiktok': 0.40, 'google-search': 0.65, 'ttd': 0.20, 'ctv': 0.15, 'spotify': 0.25, 'linkedin': 0.35, 'ooh': 0.20 },
-      'high-net-worth': { 'instagram': 0.45, 'facebook': 0.40, 'tiktok': 0.10, 'google-search': 0.70, 'ttd': 0.35, 'ctv': 0.50, 'spotify': 0.20, 'linkedin': 0.65, 'ooh': 0.45 },
-      'students': { 'instagram': 0.85, 'facebook': 0.55, 'tiktok': 0.80, 'google-search': 0.60, 'ttd': 0.15, 'ctv': 0.10, 'spotify': 0.70, 'linkedin': 0.05, 'ooh': 0.15 },
-      'retirees': { 'instagram': 0.25, 'facebook': 0.50, 'tiktok': 0.05, 'google-search': 0.65, 'ttd': 0.30, 'ctv': 0.45, 'spotify': 0.10, 'linkedin': 0.30, 'ooh': 0.35 },
-      'business-owners': { 'instagram': 0.45, 'facebook': 0.50, 'tiktok': 0.15, 'google-search': 0.75, 'ttd': 0.25, 'ctv': 0.20, 'spotify': 0.15, 'linkedin': 0.70, 'ooh': 0.25 },
-      'mass-market': { 'instagram': 0.60, 'facebook': 0.65, 'tiktok': 0.35, 'google-search': 0.70, 'ttd': 0.40, 'ctv': 0.45, 'spotify': 0.30, 'linkedin': 0.20, 'ooh': 0.35 },
-    };
-    const freqAudiences = allAudienceIds;
-    const freqChannels: ChannelId[] = ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify', 'linkedin', 'ooh'];
-    const matrix: Record<string, Record<string, number>> = {};
-    const totals: Record<string, number> = {};
-    const freqStatuses: Record<string, 'optimal' | 'elevated' | 'over-exposed' | 'under-reached'> = {};
-    const weeks = Math.max(1, dayCount / 7);
-    for (const aud of freqAudiences) {
-      matrix[aud] = {};
-      let totalFreq = 0;
-      for (const ch of freqChannels) {
-        let cellWeeklySpend = 0, cellAvgCPM = 0, cellSpendCount = 0;
-        for (const camp of viewCampaigns) {
-          if (!camp.audiences.includes(aud)) continue;
-          if (!camp.channels.includes(ch)) continue;
-          const splitFactor = 1 / camp.audiences.length;
-          const chData = store.dailyData[camp.id]?.[ch];
-          if (!chData) continue;
-          const days = filterDailyByDate(chData, start, end);
-          let chSpend = 0, chImpressions = 0;
-          for (const d of days) { chSpend += d.spend * splitFactor; chImpressions += d.impressions * splitFactor; }
-          cellWeeklySpend += chSpend / weeks;
-          if (chImpressions > 0 && chSpend > 0) { cellAvgCPM += (chSpend / chImpressions) * 1000; cellSpendCount++; }
-        }
-        if (cellWeeklySpend <= 0 || cellSpendCount === 0) {
-          matrix[aud][ch] = 0;
-        } else {
-          const avgCPM = cellAvgCPM / cellSpendCount;
-          const weeklyImpressions = (cellWeeklySpend / avgCPM) * 1000;
-          const audienceSize = AUDIENCE_SIZE_ESTIMATES[aud] || 3_000_000;
-          const channelReach = CHANNEL_REACH_RATES[aud]?.[ch] || 0.3;
-          const reachableAudience = audienceSize * channelReach;
-          const freq = reachableAudience > 0 ? weeklyImpressions / reachableAudience : 0;
-          matrix[aud][ch] = Math.round(freq * 10) / 10;
-        }
-        totalFreq += matrix[aud][ch];
-      }
-      totals[aud] = Math.round(totalFreq * 10) / 10;
-      freqStatuses[aud] = totalFreq < 6 ? 'under-reached' : totalFreq <= 8 ? 'optimal' : totalFreq <= 12 ? 'elevated' : 'over-exposed';
+    // ===== Audience Investment Distribution =====
+    const investAudiences = allAudienceIds;
+    const investChannels: ChannelId[] = ['instagram', 'facebook', 'tiktok', 'google-search', 'ttd', 'ctv', 'spotify', 'linkedin', 'ooh'];
+    const investMatrix: Record<string, Record<string, number>> = {};
+    const investTotals: Record<string, number> = {};
+    const investChannelTotals: Record<string, number> = {};
+    const investDiversification: Record<string, 'concentrated' | 'balanced' | 'fragmented'> = {};
+
+    // Step 1: Compute raw spend per audience × channel
+    const audChanSpend: Record<string, Record<string, number>> = {};
+    for (const aud of investAudiences) {
+      audChanSpend[aud] = {};
+      for (const ch of investChannels) { audChanSpend[aud][ch] = 0; }
     }
-    const frequencyData = { audiences: freqAudiences, channels: freqChannels, matrix, totals, statuses: freqStatuses };
+    for (const camp of viewCampaigns) {
+      const audienceSplit = 1 / camp.audiences.length;
+      for (const ch of camp.channels) {
+        if (channelFilter && !channelFilter.includes(ch)) continue;
+        if (!investChannels.includes(ch)) continue;
+        const chData = store.dailyData[camp.id]?.[ch];
+        if (!chData) continue;
+        const days = filterDailyByDate(chData, start, end);
+        const chSpend = days.reduce((s, d) => s + d.spend, 0);
+        for (const aud of camp.audiences) {
+          audChanSpend[aud][ch] += chSpend * audienceSplit;
+        }
+      }
+    }
+
+    // Step 2: Convert to percentages (each row sums to 100%)
+    for (const aud of investAudiences) {
+      const audTotal = Object.values(audChanSpend[aud]).reduce((s, v) => s + v, 0);
+      investTotals[aud] = audTotal;
+      investMatrix[aud] = {};
+      for (const ch of investChannels) {
+        investMatrix[aud][ch] = audTotal > 0 ? Math.round((audChanSpend[aud][ch] / audTotal) * 1000) / 10 : 0;
+      }
+      // Step 3: Diversification assessment
+      const shares = Object.values(investMatrix[aud]).filter(v => v > 0).sort((a, b) => b - a);
+      const topTwo = (shares[0] || 0) + (shares[1] || 0);
+      const topOne = shares[0] || 0;
+      if (topTwo > 70) { investDiversification[aud] = 'concentrated'; }
+      else if (topOne < 20) { investDiversification[aud] = 'fragmented'; }
+      else { investDiversification[aud] = 'balanced'; }
+    }
+
+    // Step 4: Channel totals
+    for (const ch of investChannels) {
+      investChannelTotals[ch] = Object.values(audChanSpend).reduce((s, audMap) => s + (audMap[ch] || 0), 0);
+    }
+    const investmentDistData = { audiences: investAudiences, channels: investChannels, matrix: investMatrix, totals: investTotals, channelTotals: investChannelTotals, diversification: investDiversification };
 
     // ===== Agency Benchmarking Data =====
     const allAgencyIds: AgencyId[] = ['omnicom', 'publicis', 'wpp', 'in-house', 'other'];
@@ -740,7 +737,7 @@ export function useDashboardData(): DashboardData {
       channelData: channelDataMap, stateData, topImproving, topDeclining, anomalies, scopedInsights,
       filteredGeos: selectedGeos,
       allCampaigns: store.campaigns, selectedCampaignObj, store,
-      funnelData, audienceData, frequencyData, agencyData, sankeyData, conversionValueData,
+      funnelData, audienceData, investmentDistData, agencyData, sankeyData, conversionValueData,
     };
   }, [store, dateRange, compareEnabled, selectedDivisions, selectedAgencies, selectedProductLines, selectedAudiences, selectedGeos, selectedChannels, selectedCampaigns, selectedObjectives, selectedCampaignStatuses, attributionModel, selectedDivision, selectedProductLine, selectedCampaign]);
 }
