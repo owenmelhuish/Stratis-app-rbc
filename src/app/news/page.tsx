@@ -76,48 +76,174 @@ const FEED_SECTIONS: FeedSection[] = [
 
 const CURATED_IMAGES: Array<{ match: RegExp; photos: string[] }> = [
   // ── Brand & Corporate Narrative ──
-  { match: /CEO|corporate|brand|narrative/i, photos: ["photo-1460925895917-afdab827c52f"] },
-  { match: /ESG|sustainable|sustainability/i, photos: ["photo-1559526324-4b87b5e36e44"] },
-  { match: /expansion|growth/i, photos: ["photo-1555396273-367ea4eb4db5"] },
+  { match: /Earnings|Q1 2026/i, photos: [
+    "photo-1611974789855-9c2a0a7236a3",  // stock chart / financial data
+  ]},
+  { match: /Avion.*Named|#1 Travel|MoneySense/i, photos: [
+    "photo-1500835556837-99ac94a94552",  // tropical beach aerial — travel rewards
+  ]},
+  { match: /ESG|sustainable|sustainability|climate/i, photos: [
+    "photo-1473341304170-971dccb5ac1e",  // green forest canopy — sustainability
+  ]},
+  { match: /Mobile App|app downloads|biometric/i, photos: [
+    "photo-1512941937669-90a1b58e7e9c",  // smartphone in hand — mobile banking
+  ]},
+  { match: /Most Valuable.*Brand|BrandZ/i, photos: [
+    "photo-1486406146926-c627a92ad1ab",  // modern skyscraper — corporate prestige
+  ]},
+  { match: /Wealth Management.*Assets|Client Assets.*Record|\$1\.2T/i, photos: [
+    "photo-1551836022-d5d88e9218df",  // luxury office interior — wealth management
+  ]},
 
-  // ── Financial Services Industry ──
-  { match: /revenue|market|industry/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /digital|fintech|platform/i, photos: ["photo-1556742393-d75f468bfcb0"] },
-  { match: /banking|bank/i, photos: ["photo-1526367790999-0150786686a2"] },
+  // ── Banking Industry & Regulation ──
+  { match: /Open Banking.*Framework|OSFI.*Open Banking/i, photos: [
+    "photo-1451187580459-43490279c0fa",  // digital network / connected nodes
+  ]},
+  { match: /Rate Cut|Rate Decision|Bank of Canada.*Signal/i, photos: [
+    "photo-1535320903710-d993d3d77d29",  // stock market ticker board
+  ]},
+  { match: /Digital Adoption|Mobile.First/i, photos: [
+    "photo-1551288049-bebda4e38f71",  // data dashboard on screen
+  ]},
+  { match: /Open Banking.*Pilot|Data Portability/i, photos: [
+    "photo-1558494949-ef010cbdcc31",  // server room / technology
+  ]},
+  { match: /Cybersecurity|Fraud Detection/i, photos: [
+    "photo-1550751827-4bd374c3f58b",  // cybersecurity / digital lock
+  ]},
 
-  // ── Product & Innovation ──
-  { match: /card|credit|avion|ion/i, photos: ["photo-1574071318508-1cdbab80d002"] },
-  { match: /mortgage|home/i, photos: ["photo-1565299624946-b28f40a0ae38"] },
-  { match: /invest|TFSA|wealth/i, photos: ["photo-1590947132387-155cc02f3212"] },
+  // ── Credit Cards ──
+  { match: /Rewards War|Avion.*Aeroplan.*Scene/i, photos: [
+    "photo-1556742049-0cfed4f6a45d",  // credit cards fanned out
+  ]},
+  { match: /Buy Now Pay Later|BNPL/i, photos: [
+    "photo-1556742111-a301076d9d18",  // shopping / retail checkout
+  ]},
+  { match: /Contactless.*Payment|Tap.to.Pay/i, photos: [
+    "photo-1556742393-d75f468bfcb0",  // contactless payment terminal
+  ]},
+  { match: /Premium Credit Card.*Rise/i, photos: [
+    "photo-1526304640581-d334cdbbf45e",  // luxury travel / airport lounge
+  ]},
+  { match: /Credit Card Spending.*Record/i, photos: [
+    "photo-1556742205-e10c9486e506",  // shopping bags — consumer spending
+  ]},
 
-  // ── Digital Banking ──
-  { match: /mobile|app|digital banking/i, photos: ["photo-1567620905732-2d1ec7ab7445"] },
-  { match: /payment|contactless/i, photos: ["photo-1528137871618-79d2761e3fd5"] },
+  // ── Fintech ──
+  { match: /Wealthsimple/i, photos: [
+    "photo-1611162617474-5b21e879e113",  // fintech app on phone
+  ]},
+  { match: /EQ Bank/i, photos: [
+    "photo-1579621970563-ebec7560ff3e",  // piggy bank / savings
+  ]},
+  { match: /Neo Financial/i, photos: [
+    "photo-1559526324-4b87b5e36e44",  // startup office space
+  ]},
+  { match: /Fintech Investment.*\$3\.8B/i, photos: [
+    "photo-1460472178825-e5240623afd5",  // venture capital / funding
+  ]},
+  { match: /KOHO|Credit Building/i, photos: [
+    "photo-1563013544-824ae1b704d3",  // young person with phone — fintech user
+  ]},
 
-  // ── Social & Financial Culture ──
-  { match: /reddit|tiktok|social/i, photos: ["photo-1604382354936-07c5d9983bd3"] },
-  { match: /community|culture/i, photos: ["photo-1513104890138-7c749659a591"] },
+  // ── Social & Sentiment ──
+  { match: /Reddit.*Credit Card|Best Credit Card.*Thread/i, photos: [
+    "photo-1611162616305-c69b3fa7fbe0",  // reddit / online discussion
+  ]},
+  { match: /TikTok.*FinTok|TFSA.*Content/i, photos: [
+    "photo-1611162618071-b39a2ec055fb",  // social media / content creation
+  ]},
+  { match: /churningcanada/i, photos: [
+    "photo-1557804506-669a67965ba0",  // person on laptop — online community
+  ]},
+  { match: /Rate My Portfolio/i, photos: [
+    "photo-1590283603385-17ffb3a7f29f",  // investment portfolio on screen
+  ]},
+  { match: /Day in My Life.*Banker/i, photos: [
+    "photo-1573496359142-b8d87734a5a2",  // professional in office
+  ]},
 
-  // ── Sports & Sponsorships ──
-  { match: /sports|game day|NHL|hockey/i, photos: ["photo-1546519638-68e109498ffc"] },
-  { match: /Maple Leafs|Raptors/i, photos: ["photo-1552566626-52f8b828add9"] },
-  { match: /PWHL|women/i, photos: ["photo-1515703407324-5f753afd8be8"] },
-  { match: /CFL|Lions|football/i, photos: ["photo-1487466365202-1afdb86c764e"] },
+  // ── Sports ──
+  { match: /Canadian Open.*Attendance|Canadian Open.*Record/i, photos: [
+    "photo-1535131749006-b7f58c99034b",  // golf course — tournament
+  ]},
+  { match: /Sports Sponsorship ROI/i, photos: [
+    "photo-1540747913346-19e32dc3e97e",  // stadium crowd — sports event
+  ]},
+  { match: /Team RBC.*Win|4 Majors/i, photos: [
+    "photo-1587174486073-ae5e5cff23aa",  // golf trophy / celebration
+  ]},
+  { match: /NHL Playoffs|Financial Product Searches/i, photos: [
+    "photo-1515703407324-5f753afd8be8",  // hockey arena
+  ]},
+  { match: /Golf Sponsorship ROI.*3\.5x/i, photos: [
+    "photo-1592919505780-303950717480",  // golf swing
+  ]},
 
-  // ── Competitor Watch ──
-  { match: /TD|BMO|Scotiabank|CIBC|competitor/i, photos: ["photo-1571407970349-bc81e7e96d47"] },
+  // ── Sponsorships ──
+  { match: /Canadian Open 2026.*Announced|St\. George/i, photos: [
+    "photo-1600585154340-be6161a56a0c",  // golf clubhouse
+  ]},
+  { match: /Rising PGA|Portfolio.*12 Athletes/i, photos: [
+    "photo-1595435742656-5272d0b3fa82",  // athlete portrait
+  ]},
+  { match: /Community Sponsorship.*1,?200/i, photos: [
+    "photo-1491438590914-bc09fcaaf77a",  // community event / crowd
+  ]},
+  { match: /Foundation.*\$50M|Financial Literacy/i, photos: [
+    "photo-1427504494785-3a9ca7044f45",  // classroom / education
+  ]},
+  { match: /Golfer Wins First Major|\$18M.*Brand Value/i, photos: [
+    "photo-1622398925373-3f91b1e275f5",  // golf celebration / major win
+  ]},
+
+  // ── Competitors ──
+  { match: /TD.*First Class Travel|TD.*Visa/i, photos: [
+    "photo-1521295121783-8a321d551ad2",  // airport terminal — competitor card launch
+  ]},
+  { match: /Scotiabank.*Scene\+|Cineplex/i, photos: [
+    "photo-1489599849927-2ee91cede3ba",  // cinema / entertainment
+  ]},
+  { match: /BMO.*alto|BMO.*Digital/i, photos: [
+    "photo-1563986768494-4dee2763ff3f",  // modern bank branch / digital
+  ]},
+  { match: /CIBC.*AI|AI.Powered.*Financial/i, photos: [
+    "photo-1677442136019-21780ecad995",  // AI / artificial intelligence
+  ]},
+  { match: /National Bank.*Acquires|Fintech Lender/i, photos: [
+    "photo-1454165804606-c3d57bc86b40",  // business handshake / M&A
+  ]},
+  { match: /TD.*Cross.Border|Snowbird/i, photos: [
+    "photo-1569154941061-e231b4725ef1",  // US-Canada border / travel
+  ]},
 
   // ── Macro Environment ──
-  { match: /Consumer Confidence|inflation/i, photos: ["photo-1460925895917-afdab827c52f"] },
-  { match: /interest rate|Bank of Canada/i, photos: ["photo-1551288049-bebda4e38f71"] },
-  { match: /housing|real estate/i, photos: ["photo-1586528116311-ad8dd3c8310d"] },
-  { match: /spending|forecast/i, photos: ["photo-1607083206968-13611e3d76db"] },
+  { match: /Consumer Confidence.*Rises|Q1 2026.*Confidence/i, photos: [
+    "photo-1604594849809-dfedbc827105",  // Canadian city skyline
+  ]},
+  { match: /Bank of Canada.*Holds.*Rate|3\.25%/i, photos: [
+    "photo-1533073526757-2c8ca1df9f1c",  // Parliament Hill Ottawa — rate decision
+  ]},
+  { match: /Household Debt|Debt.to.Income|Mortgage Renewal/i, photos: [
+    "photo-1560518883-ce09059eeffa",  // suburban houses — housing/debt
+  ]},
+  { match: /Housing Market.*Stabiliz|Spring Listings/i, photos: [
+    "photo-1582268611958-ebfd161ef9cf",  // house for sale / real estate
+  ]},
+  { match: /Employment Rate|Tech.*Layoff/i, photos: [
+    "photo-1497215842964-222b430dc094",  // coworking space / employment
+  ]},
+  { match: /Savings Rate.*Rises|Financial Buffer/i, photos: [
+    "photo-1579621970795-87facc2f976d",  // coins / savings jar
+  ]},
 ];
 
 const FALLBACK_PHOTOS = [
-  "photo-1565299624946-b28f40a0ae38",
-  "photo-1513104890138-7c749659a591",
-  "photo-1574071318508-1cdbab80d002",
+  "photo-1486406146926-c627a92ad1ab",  // skyscraper
+  "photo-1551288049-bebda4e38f71",  // data dashboard
+  "photo-1556742049-0cfed4f6a45d",  // credit cards
+  "photo-1604594849809-dfedbc827105",  // city skyline
+  "photo-1451187580459-43490279c0fa",  // digital network
 ];
 
 function hashId(id: string): number {
