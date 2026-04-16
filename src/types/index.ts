@@ -130,6 +130,43 @@ export interface Campaign {
   plannedBudget: number;
 }
 
+// ===== Campaign Draft (briefing input) =====
+export type PacingPreference = 'even' | 'front-loaded' | 'back-loaded';
+export type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+export interface BriefFileMeta {
+  name: string;
+  size: number;
+  type: string;
+}
+
+export interface DraftCampaign {
+  name: string;
+  division: DivisionId | '';
+  productLine: ProductLineId | '';
+  agency: AgencyId | '';
+  briefNarrative: string;
+  briefFile: BriefFileMeta | null;
+  successCriteria: string;
+  objective: CampaignObjective | '';
+  secondaryObjectives: CampaignObjective[];
+  funnelStage: FunnelStage;
+  attributionModel: AttributionModel | '';
+  kpiTargets: Partial<Record<KPIKey, string>>;
+  priorityKpis: KPIKey[];
+  benchmarkContext: string;
+  confidenceLevel: ConfidenceLevel;
+  definitionOfWin: string;
+  audiences: AudienceId[];
+  geos: GeoId[];
+  startDate: string;
+  endDate: string;
+  plannedBudget: string;
+  pacing: PacingPreference;
+  channels: ChannelId[];
+  channelBudgetSplits: Partial<Record<ChannelId, number>>;
+}
+
 // ===== KPI Data =====
 export interface DailyMetrics {
   date: string; // YYYY-MM-DD

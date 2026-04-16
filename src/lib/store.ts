@@ -18,8 +18,36 @@ import type {
   DismissReason,
   ActionLogEntry,
   FunnelStage,
+  DraftCampaign,
 } from '@/types';
 import { DEFAULT_BRAND_KPIS, FUNNEL_CUSTOM_KPIS } from '@/types';
+
+export const EMPTY_DRAFT_CAMPAIGN: DraftCampaign = {
+  name: '',
+  division: '',
+  productLine: '',
+  agency: '',
+  briefNarrative: '',
+  briefFile: null,
+  successCriteria: '',
+  objective: '',
+  secondaryObjectives: [],
+  funnelStage: 'all',
+  attributionModel: '',
+  kpiTargets: {},
+  priorityKpis: [],
+  benchmarkContext: '',
+  confidenceLevel: 'medium',
+  definitionOfWin: '',
+  audiences: [],
+  geos: [],
+  startDate: '',
+  endDate: '',
+  plannedBudget: '',
+  pacing: 'even',
+  channels: [],
+  channelBudgetSplits: {},
+};
 
 const STORAGE_KEY = 'stratis-app-state';
 const TODAY = new Date('2026-02-12');
@@ -59,6 +87,7 @@ interface PersistedState {
   insightDismissals: Record<string, DismissReason>;
   insightSnoozes: Record<string, string>;
   actionLog: ActionLogEntry[];
+  draftCampaign: DraftCampaign;
 }
 
 function readStorage(): Partial<PersistedState> | null {
@@ -105,6 +134,7 @@ export interface AppState {
   approvedDrawerOpen: boolean;
   molecularFilterOpen: boolean;
   molecularSelections: string[];
+  draftCampaign: DraftCampaign;
 
   setDateRange: (range: DateRange) => void;
   setDatePreset: (preset: DateRangePreset) => void;
@@ -140,6 +170,9 @@ export interface AppState {
   drillToCampaign: (campaignId: string) => void;
   drillUp: () => void;
 
+  setDraftCampaignField: <K extends keyof DraftCampaign>(key: K, value: DraftCampaign[K]) => void;
+  resetDraftCampaign: () => void;
+
   hydrateFromStorage: () => void;
   syncToStorage: () => void;
 }
@@ -174,6 +207,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   approvedDrawerOpen: false,
   molecularFilterOpen: false,
   molecularSelections: [],
+  draftCampaign: { ...EMPTY_DRAFT_CAMPAIGN },
 
   setDateRange: (range) => { set({ dateRange: range }); get().syncToStorage(); },
   setDatePreset: (preset) => {
@@ -256,6 +290,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
     else if (selectedDivision) { set({ selectedDivision: null }); }
   },
 
+  setDraftCampaignField: (key, value) => {
+    set((s) => ({ draftCampaign: { ...s.draftCampaign, [key]: value } }));
+    get().syncToStorage();
+  },
+  resetDraftCampaign: () => {
+    set({ draftCampaign: { ...EMPTY_DRAFT_CAMPAIGN } });
+    get().syncToStorage();
+  },
+
   hydrateFromStorage: () => {
     const persisted = readStorage();
     if (!persisted) return;
@@ -270,6 +313,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
       insightDismissals: persisted.insightDismissals ?? s.insightDismissals,
       insightSnoozes: persisted.insightSnoozes ?? s.insightSnoozes,
       actionLog: persisted.actionLog ?? s.actionLog,
+      draftCampaign: persisted.draftCampaign
+        ? { ...EMPTY_DRAFT_CAMPAIGN, ...persisted.draftCampaign }
+        : s.draftCampaign,
     }));
   },
 
@@ -286,6 +332,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       insightDismissals: s.insightDismissals,
       insightSnoozes: s.insightSnoozes,
       actionLog: s.actionLog,
+      draftCampaign: s.draftCampaign,
     });
   },
 }));
